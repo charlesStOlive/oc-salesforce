@@ -1,0 +1,31 @@
+# ===================================
+#  Form Behavior Config
+# ===================================
+
+# Record name
+name: waka.salesforce::lang.logsf.form_name
+
+# Model Form Field configuration
+form: $/waka/salesforce/models/logsf/fields.yaml
+
+# Model Class name
+modelClass: Waka\SalesForce\Models\Logsf
+
+# Default redirect location
+defaultRedirect: waka/salesforce/logsfs
+
+# Create page
+create:
+    title: Create Logsf
+    redirect: waka/salesforce/logsfs/update/:id
+    redirectClose: waka/salesforce/logsfs
+
+# Update page
+update:
+    title: Edit Logsf
+    redirect: waka/salesforce/logsfs
+    redirectClose: waka/salesforce/logsfs
+
+# Preview page
+preview:
+    title: waka.salesforce::lang.logsf.preview_name

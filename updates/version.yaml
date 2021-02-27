@@ -1,0 +1,4 @@
+1.0.1: 
+  - 'First version of SalesForce'
+  - create_logsfs_table.php
+  - create_logsf_errors_table.php

@@ -1,0 +1,23 @@
+# ===================================
+#  Form Field Definitions
+# ===================================
+
+fields:
+    name:
+        label: waka.salesforce::lang.logsf.name
+        span: auto
+        required: true
+
+    nb:
+        label: waka.salesforce::lang.logsf.nb
+        span: auto
+    
+    query:
+        label: waka.salesforce::lang.logsf.query
+        type: textarea
+
+    logsfErrors:
+        type: partial
+        path: field_errors
+
+ 

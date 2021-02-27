@@ -1,0 +1,12 @@
+fields:
+  active_imports:
+    label: waka.salesforce::lang.settings.active_imports
+    type: checkboxlist
+    quickselect: true 
+    options: listImports
+
+  oldest_date:
+    label: waka.salesforce::lang.settings.oldest_date
+    type: datepicker
+
+  
