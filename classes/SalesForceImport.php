@@ -58,6 +58,9 @@ class SalesForceImport
                     case "month_m_1":
                         $vars[$key] = Carbon::now()->subMonth()->format('Y-m-d\TH:i:s.uP');
                         break;
+                    case "year_y_1":
+                        $vars[$key] = Carbon::now()->subYear()->format('Y-m-d');
+                        break;
                     case "last_log":
                         $vars[$key] = $this->lastLogDate->format('Y-m-d\TH:i:s.uP');
                         break;
@@ -133,18 +136,17 @@ class SalesForceImport
             $this->updateLog('sf_total_size', $result['totalSize'] ?? null);
             if($this->queryModel) {
                 $classImport = $this->queryModel;
-                $queryFnc = $classImport->{$this->queryFnc}($result['records']);
+                $this->mappedRows += $classImport->{$this->queryFnc}($result['records']);
             } else {
                 $this->mapResults($result['records']);
             }
-            
             $next = $result['nextRecordsUrl'] ?? null;
             $this->sendQuery(null, $next);
         } else if ($next) {
             $result = \Forrest::next($next);
             if($this->queryModel) {
                 $classImport = $this->queryModel;
-                $queryFnc = $classImport->{$this->queryFnc}($result['records']);
+                $this->mappedRows += $classImport->{$this->queryFnc}($result['records']);
             } else {
                 $this->mapResults($result['records']);
             }
