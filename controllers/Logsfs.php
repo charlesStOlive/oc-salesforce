@@ -80,7 +80,7 @@ class Logsfs extends Controller
         $accounts = null;
         $sf = new \Waka\SalesForce\Classes\SalesForceConfig();
         $sf->execImports();
-        // return \Redirect::refresh();
+        return \Redirect::refresh();
 
         // $filleulCOnfig = $sf->getOneConfig('importParrains');
         // $sfImport = new \Waka\SalesForce\Classes\SalesForceImport($filleulCOnfig);

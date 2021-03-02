@@ -5,7 +5,7 @@ namespace Waka\SalesForce\Classes;
 use Carbon\Carbon;
 use Waka\SalesForce\Models\Logsf;
 use Waka\SalesForce\Models\LogsfError;
-use Waka\Wconfig\Models\Settings;
+use Wcli\Wconfig\Models\Settings;
 
 class SalesForceImport
 {
@@ -17,11 +17,17 @@ class SalesForceImport
     public $name;
     public $mappedRows;
     public $lastLogDate;
+    private $queryModel;
+    private $queryFnc;
 
     public function __construct(array $config)
     {
         //trace_log($config);
         $this->query = $config['query'] ?? null;
+        $query_model = $config['query_model'] ?? false;
+        $query_fnc = $config['query_fnc'] ?? false;
+        
+        $this->queryModel = $config['query_model'] ?? null;
         $this->model = $config['model'] ?? null;
         $this->name = $config['name'] ?? null;
         $this->lastLogDate = $this->getLastLogDate();
@@ -30,7 +36,10 @@ class SalesForceImport
         $this->mappedDatas = $config['mapping'] ?? null;
         $this->mappedDatas = $config['mapping'] ?? null;
         $this->transform = $config['transform'] ?? null;
-        if (!$this->query || !$this->vars || !$this->mappedDatas) {
+        if($query_model && $query_fnc) {
+            $this->queryModel = new $query_model;
+            $this->queryFnc = $query_fnc;
+        } elseif (!$this->query || !$this->vars || !$this->mappedDatas) {
             throw new \ApplicationException('SalesForce impoter  error due to config ');
         }
         $this->createLog();
@@ -40,22 +49,28 @@ class SalesForceImport
 
     public function prepareVars($vars)
     {
-        foreach ($vars as $key => $var) {
-            switch ($var) {
-                case "day_m_1":
-                    $vars[$key] = Carbon::now()->subDay()->format('Y-m-d\TH:i:s.uP');
-                    break;
-                case "month_m_1":
-                    $vars[$key] = Carbon::now()->subMonth()->format('Y-m-d\TH:i:s.uP');
-                    break;
-                case "last_log":
-                    $vars[$key] = $this->lastLogDate->format('Y-m-d\TH:i:s.uP');
-                    break;
-                default:
-                    $vars[$key] = $var;
+        if($vars) {
+            foreach ($vars as $key => $var) {
+                switch ($var) {
+                    case "day_m_1":
+                        $vars[$key] = Carbon::now()->subDay()->format('Y-m-d\TH:i:s.uP');
+                        break;
+                    case "month_m_1":
+                        $vars[$key] = Carbon::now()->subMonth()->format('Y-m-d\TH:i:s.uP');
+                        break;
+                    case "last_log":
+                        $vars[$key] = $this->lastLogDate->format('Y-m-d\TH:i:s.uP');
+                        break;
+                    default:
+                        $vars[$key] = $var;
+                }
             }
+            return $vars;
+        } else {
+            return [];
         }
-        return $vars;
+        
+        
     }
 
     public function getLastLogDate()
@@ -116,12 +131,23 @@ class SalesForceImport
         if (!$next && $query) {
             $result = \Forrest::query($query);
             $this->updateLog('sf_total_size', $result['totalSize'] ?? null);
-            $this->mapResults($result['records']);
+            if($this->queryModel) {
+                $classImport = $this->queryModel;
+                $queryFnc = $classImport->{$this->queryFnc}($result['records']);
+            } else {
+                $this->mapResults($result['records']);
+            }
+            
             $next = $result['nextRecordsUrl'] ?? null;
             $this->sendQuery(null, $next);
         } else if ($next) {
             $result = \Forrest::next($next);
-            $this->mapResults($result['records']);
+            if($this->queryModel) {
+                $classImport = $this->queryModel;
+                $queryFnc = $classImport->{$this->queryFnc}($result['records']);
+            } else {
+                $this->mapResults($result['records']);
+            }
             $next = $result['nextRecordsUrl'] ?? null;
             $this->sendQuery(null, $next);
         } else {

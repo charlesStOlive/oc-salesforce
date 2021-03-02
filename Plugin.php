@@ -8,7 +8,7 @@ use Event;
 use Illuminate\Foundation\AliasLoader;
 use Lang;
 use System\Classes\PluginBase;
-use Waka\Wconfig\Models\Settings;
+use Wcli\Wconfig\Models\Settings; 
 
 /**
  * SalesForce Plugin Information File
@@ -164,6 +164,13 @@ class Plugin extends PluginBase
                 ],
             ]);
         });
+        Settings::extend(function($setting) {
+            $setting->addDynamicMethod('listImports', function() {
+                $sf = new \Waka\SalesForce\Classes\SalesForceConfig();
+                return $sf->lists('import');
+            });
+        });
+        
 
     }
 
