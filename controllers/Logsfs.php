@@ -27,31 +27,35 @@ class Logsfs extends Controller
         SettingsManager::setContext('Waka.SalesForce', 'logsfs');
     }
 
-    public function isSfAuthorized()
-    {
-        try {
-            $forrest = \Forrest::identity();
-            if ($forrest) {
-                return true;
-            } else {
-                return false;
-            }
-        } catch (\Exception $e) {
-            return false;
-        }
+    // public function isSfAuthorized()
+    // {
+    //     trace_log("Est ce qu'il est auth");
+    //     try {
+    //         $forrest = \Forrest::identity();
+    //         if ($forrest) {
+    //             trace_log($forrest);
+    //             return true;
+    //         } else {
+    //             return false;
+    //         }
+    //     } catch (\Exception $e) {
+    //         return false;
+    //     }
 
-    }
+    // }
 
     public function isSfAuthenticate()
     {
+        trace_log("Est ce qu'il est auth");
         try {
             $forrest = \Forrest::identity();
-            if ($forrest) {
-                return true;
-            } else {
-                return $this->tryToConnect();
-            }
         } catch (\Exception $e) {
+            trace_log("erreur");
+            return false;
+        }
+        if ($forrest) {
+            return true;
+        } else {
             return $this->tryToConnect();
         }
     }
@@ -59,10 +63,15 @@ class Logsfs extends Controller
     public function tryToConnect()
     {
         try {
-            \Forrest::authenticate();
-            return true;
+            $forrest = \Forrest::authenticate();
         } catch (\Exception $e) {
             return false;
+        }
+        if ($forrest) {
+            trace_log(get_class($forrest));
+            return true;
+        } else {
+            return $this->tryToConnect();
         }
     }
 

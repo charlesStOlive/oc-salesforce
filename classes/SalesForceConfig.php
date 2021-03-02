@@ -4,7 +4,7 @@ namespace Waka\SalesForce\Classes;
 
 use Config;
 use October\Rain\Support\Collection;
-use Waka\Wconfig\Models\Settings;
+use Wcli\Wconfig\Models\Settings;
 use Yaml;
 
 class SalesForceConfig
@@ -63,11 +63,11 @@ class SalesForceConfig
 
     public function getSrConfig()
     {
-        $configYaml = Config::get('waka.wconfig::salesForce.src');
+        $configYaml = Config::get('wcli.wconfig::salesForce.src');
         if ($configYaml) {
             return Yaml::parseFile(plugins_path() . $configYaml);
         } else {
-            return Yaml::parseFile(plugins_path() . '/waka/wconfig/config/salesforce.yaml');
+            return Yaml::parseFile(plugins_path() . '/wcli/wconfig/config/salesforce.yaml');
         }
 
     }

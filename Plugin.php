@@ -111,6 +111,8 @@ class Plugin extends PluginBase
     {
         $this->bootPackages();
 
+        trace_log(Config::get('forrest.authentication'));
+
         Event::listen('backend.form.extendFields', function ($widget) {
 
             //trace_log('yo');
