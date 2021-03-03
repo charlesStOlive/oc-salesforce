@@ -9,134 +9,138 @@ use Wcli\Wconfig\Models\Settings;
 
 class SalesForceImport
 {
-    protected $query;
-    protected $vars;
-    protected $model;
-    protected $transform;
-    protected $mappedDatas;
-    public $name;
     public $mappedRows;
-    public $lastLogDate;
-    private $queryModel;
-    private $queryFnc;
+    public $logsf;
+    public $doLog;
 
-    public function __construct(array $config)
+    public static function find($key)
     {
-        //trace_log($config);
-        $this->query = $config['query'] ?? null;
-        $query_model = $config['query_model'] ?? false;
-        $query_fnc = $config['query_fnc'] ?? false;
-        
-        $this->queryModel = $config['query_model'] ?? null;
-        $this->model = $config['model'] ?? null;
-        $this->name = $config['name'] ?? null;
-        $this->lastLogDate = $this->getLastLogDate();
-        $vars = $config['vars'] ?? null;
-        $this->vars = $this->prepareVars($vars);
-        $this->mappedDatas = $config['mapping'] ?? null;
-        $this->mappedDatas = $config['mapping'] ?? null;
-        $this->transform = $config['transform'] ?? null;
-        if($query_model && $query_fnc) {
-            $this->queryModel = new $query_model;
-            $this->queryFnc = $query_fnc;
-        } elseif (!$this->query || !$this->vars || !$this->mappedDatas) {
-            throw new \ApplicationException('SalesForce impoter  error due to config ');
+        $salesForceConfgs = self::getSrConfig();
+        $config = $salesForceConfgs[$key] ?? null;
+        if (!$config) {
+            throw new \ApplicationException("La clef " . $key . " n'existe pas sans wconfig->salesforce.yaml ");
+        } else {
+            self::$config = $salesForceConfgs[$key];
+            self::instanciateValues();
         }
-        $this->createLog();
-        $this->mappedRows = 0;
-
+        return new self;
     }
 
-    public function prepareVars($vars)
+    public function addOptions($array)
     {
-        if($vars) {
-            foreach ($vars as $key => $var) {
-                switch ($var) {
-                    case "day_m_1":
-                        $vars[$key] = Carbon::now()->subDay()->format('Y-m-d\TH:i:s.uP');
-                        break;
-                    case "month_m_1":
-                        $vars[$key] = Carbon::now()->subMonth()->format('Y-m-d\TH:i:s.uP');
-                        break;
-                    case "year_y_1":
-                        $vars[$key] = Carbon::now()->subYear()->format('Y-m-d');
-                        break;
-                    case "last_log":
-                        $vars[$key] = $this->lastLogDate->format('Y-m-d\TH:i:s.uP');
-                        break;
-                    default:
-                        $vars[$key] = $var;
-                }
-            }
-            return $vars;
-        } else {
-            return [];
+        foreach ($array as $key => $value) {
+            $this->config[$key] = $value;
         }
-        
-        
+        return $this;
     }
 
-    public function getLastLogDate()
+    public function changeMainDate($dateObj)
     {
-        // trace_sql();
-        // trace_log("getLastLogDate from " . $this->name);
-        $lastImport = Logsf::where('name', $this->name)->where('is_ended', true)->orderBy('created_at', 'desc')->first();
-        //trace_log($lastImport->created_at);
-        if ($lastImport) {
-            return $lastImport->created_at;
+        $mainDateConfig = $this->config['vars']['main_date'] ?? false;
+        if ($mainDateConfig) {
+            $this->config['vars']['main_date'] = $dateObj;
+        }
+        return $this;
+    }
+
+    public function checkAndConfigImport(array $config)
+    {
+        if (!$this->config['query'] ?? false) {
+            throw new \ApplicationException("Erreur : le query n'est pas renseigné");
+        }
+        if (!$this->config['model'] ?? false) {
+            throw new \ApplicationException("Erreur : le model n'est pas renseigné");
+        }
+        if (!$this->config['name'] ?? false) {
+            throw new \ApplicationException("Erreur : le name n'est pas renseigné");
+        }
+        //Gestion des deux types de configurations.
+        $query_model = $this->config['query_model'] ?? false;
+        $query_fnc = $this->config['query_fnc'] ?? false;
+        $cconfigOk = false;
+        if ($query_model && $query_fnc) {
+            $configOk = true;
+        } elseif ($this->config['mapping'] ?? false) {
+            $configOk = true;
+        }
+        if (!$cconfigOk) {
+            throw new \ApplicationException("Erreur : Soit query_model & query_fnc doit exister soit mapping");
+        }
+        if ($config['log'] ?? true) {
+            $this->doLog = true;
+        }
+        $vars = $this->config['vars'] ?? null;
+    }
+
+    public function getSrConfig()
+    {
+        $configYaml = Config::get('wcli.wconfig::salesForce.src');
+        if ($configYaml) {
+            return Yaml::parseFile(plugins_path() . $configYaml);
         } else {
-            $date = Settings::get('sf_oldest_date');
-            return Carbon::parse($date);
+            return Yaml::parseFile(plugins_path() . '/wcli/wconfig/config/salesforce.yaml');
         }
 
     }
 
     public function prepareQuery()
     {
-        $query = \Twig::parse($this->query, $this->vars);
+        $query = $this->config['query'];
+        if ($config['vars'] ?? false) {
+            $vars = $this->prepareVars($config['vars']);
+            $query = \Twig::parse($query, $vars);
+        }
         return $query;
     }
 
-    public function createLog()
+    public function prepareVars($vars)
     {
-        $this->logsf = Logsf::create([
-            'name' => $this->name,
-            'start_at' => $this->lastLogDate,
-        ]);
-    }
-    public function updateLog($var, $value)
-    {
-        $this->logsf->update([
-            $var => $value,
-        ]);
-    }
-    public function updateAndCloseLog()
-    {
-        $this->logsf->update([
-            'is_ended' => true,
-            'ended_at' => Carbon::now(),
-            'nb_updated_rows' => $this->mappedRows,
-        ]);
+        foreach ($vars as $key => $var) {
+            $optformat = $var['format'] ?? 'time';
+            $format = 'Y-m-d\TH:i:s.uP';
+            if ($optformat == 'date') {
+                $format = 'Y-m-d';
+            }
+            switch ($var['mode']) {
+                case "d_1":
+                    $vars[$key] = Carbon::now()->subDay()->format($format);
+                    break;
+                case "m_1":
+                    $vars[$key] = Carbon::now()->subMonth()->format($format);
+                    break;
+                case "y_1":
+                    $vars[$key] = Carbon::now()->subYear()->format($format);
+                    break;
+                case "l_log":
+                    $vars[$key] = $this->getLastLogDate()->format($format);
+                    break;
+                case "perso":
+                    $vars[$key] = Carbon::parse($var['date'])->format($format);
+                    break;
+                default:
+                    $vars[$key] = $var;
+            }
+            return $vars;
+        }
     }
 
     public function executeQuery()
     {
-
+        $this->checkAndConfigImport();
         $query = $this->prepareQuery();
-        $this->updateLog('query', $query);
-        if ($query) {
-            $this->sendQuery($query);
-        }
-        $this->updateAndCloseLog();
+        $this->logsf = $this->createLog($query);
+        $this->mappedRows = 0;
+        $this->sendQuery($query);
+        $this->updateAndCloseLog($logsf);
     }
     public function sendQuery($query = null, $next = null)
     {
         if (!$next && $query) {
             $result = \Forrest::query($query);
             $this->updateLog('sf_total_size', $result['totalSize'] ?? null);
-            if($this->queryModel) {
-                $classImport = $this->queryModel;
-                $this->mappedRows += $classImport->{$this->queryFnc}($result['records']);
+            if ($this->config['query_model'] ?? false) {
+                $classImport = $this->config['query_model'];
+                $this->mappedRows += $classImport->{$this->config['query_fnc']}($result['records']);
             } else {
                 $this->mapResults($result['records']);
             }
@@ -144,9 +148,9 @@ class SalesForceImport
             $this->sendQuery(null, $next);
         } else if ($next) {
             $result = \Forrest::next($next);
-            if($this->queryModel) {
-                $classImport = $this->queryModel;
-                $this->mappedRows += $classImport->{$this->queryFnc}($result['records']);
+            if ($this->config['query_model'] ?? false) {
+                $classImport = $this->config['query_model'];
+                $this->mappedRows += $classImport->{$this->config['query_fnc']}($result['records']);
             } else {
                 $this->mapResults($result['records']);
             }
@@ -157,27 +161,12 @@ class SalesForceImport
         }
     }
 
-    public function mapResult($row)
-    {
-        $row = array_dot($row);
-        $finalResult = [];
-        foreach ($row as $column => $value) {
-            //trace_log($column);
-            $finalKey = $this->mappedDatas[$column] ?? null;
-            if (!$finalKey) {
-                continue;
-            }
-            $finalResult[$finalKey] = $this->transform($finalKey, $value);
-        }
-        return $finalResult;
-    }
-
     public function mapResults($rows)
     {
         foreach ($rows as $row) {
             $mappedRow = $this->mapResult($row);
-            $model = null;
-            if (method_exists($this->model, 'withTrashed')) {
+            $model = $this->config['model'];
+            if (method_exists($model, 'withTrashed')) {
                 $model = $this->model::withTrashed();
                 $mappedRow['deleted_at'] = null;
                 $id = array_shift($mappedRow);
@@ -192,7 +181,6 @@ class SalesForceImport
                     $this->logsf->logsfErrors()->add($logsfError);
                 }
             } else {
-                $model = $this->model;
                 $id = array_shift($mappedRow);
                 try {
                     $model::updateOrCreate(
@@ -209,12 +197,24 @@ class SalesForceImport
         }
     }
 
+    public function mapResult($row)
+    {
+        $row = array_dot($row);
+        $finalResult = [];
+        foreach ($row as $column => $value) {
+            //trace_log($column);
+            $finalKey = $this->config['mapping'][$column] ?? null;
+            if (!$finalKey) {
+                continue;
+            }
+            $finalResult[$finalKey] = $this->transform($finalKey, $value);
+        }
+        return $finalResult;
+    }
+
     public function transform($key, $value)
     {
-        // if (!$this->transform) {
-        //     return $value;
-        // }
-        $transform = $this->transform[$key] ?? null;
+        $transform = $this->config['transform'][$key] ?? null;
         if (!$transform) {
             return $value;
         }
@@ -232,10 +232,69 @@ class SalesForceImport
                     return null;
                 }
                 break;
-
             case "other":
                 return $value;
         }
         return $value;
     }
+
+    /**
+     * Travail sur lastLog pour preparer les requetes last_log : va importer uniquement les lignes MAJ depuis un dernier import réussi.
+     */
+
+    public function getLastLogDate()
+    {
+        $lastImport = Logsf::where('name', $this->config['name'])->where('is_ended', true)->orderBy('created_at', 'desc')->first();
+        if ($lastImport) {
+            return $lastImport->created_at;
+        } else {
+            $date = Settings::get('sf_oldest_date');
+            return Carbon::parse($date);
+        }
+
+    }
+
+    /**
+     * Creattion des logs
+     */
+
+    public function createLog()
+    {
+        if (!$this->doLog) {
+            return null;
+        }
+        $logsf = Logsf::create([
+            'name' => $this->config['name'],
+            'start_at' => $this->getLastLogDate(),
+        ]);
+        return $logsf;
+    }
+    public function updateLog($var, $value, $logsf = null)
+    {
+        if (!$this->doLog) {
+            return null;
+        }
+        if (!$logsf) {
+            $logsf = $this->$logsf;
+        }
+        if (!$logSf) {
+            throw new \ApplicationException('Erreur au niveau des logsf');
+        }
+        $logsf->update([
+            $var => $value,
+        ]);
+    }
+    public function updateAndCloseLog($logSf)
+    {
+        if (!$this->doLog) {
+            return null;
+        }
+        $logsf->update([
+            'is_ended' => true,
+            'ended_at' => Carbon::now(),
+            'nb_updated_rows' => $this->mappedRows,
+        ]);
+        return $logsf;
+    }
+
 }

@@ -8,7 +8,9 @@ use Event;
 use Illuminate\Foundation\AliasLoader;
 use Lang;
 use System\Classes\PluginBase;
-use Wcli\Wconfig\Models\Settings; 
+use Waka\SalesForce\Classes\SalesForceConfig;
+use Waka\SalesForce\Classes\SalesForceImport;
+use Wcli\Wconfig\Models\Settings;
 
 /**
  * SalesForce Plugin Information File
@@ -79,9 +81,10 @@ class Plugin extends PluginBase
             if ($forrest) {
                 //trace_log("OK je lance l'import");
                 //Lancement du CRON
-                $sf = new \Waka\SalesForce\Classes\SalesForceConfig();
-                $sf->execImports();
-
+                $imports = Settings::get('sf_active_imports');
+                foreach ($imports as $key => $import) {
+                    SalesForceImport::find($key)->executeQuery();
+                }
                 //trace_log("Import terminé");
                 //A la fin j'envoie le mail de bilan aux collaborateurs
                 foreach ($usersIds as $userId) {
@@ -164,13 +167,12 @@ class Plugin extends PluginBase
                 ],
             ]);
         });
-        Settings::extend(function($setting) {
-            $setting->addDynamicMethod('listImports', function() {
+        Settings::extend(function ($setting) {
+            $setting->addDynamicMethod('listImports', function () {
                 $sf = new \Waka\SalesForce\Classes\SalesForceConfig();
                 return $sf->lists('import');
             });
         });
-        
 
     }
 

@@ -20,11 +20,14 @@ class Logsfs extends Controller
     public $listConfig = 'config_list.yaml';
     public $relationConfig = 'config_relation.yaml';
 
+    public $sfpopupWidget;
+
     public function __construct()
     {
         parent::__construct();
         BackendMenu::setContext('October.System', 'system', 'settings');
         SettingsManager::setContext('Waka.SalesForce', 'logsfs');
+        $this->sfpopupWidget = $this->createSfPopupWidget();
     }
 
     // public function isSfAuthorized()
@@ -81,15 +84,6 @@ class Logsfs extends Controller
         $sf = new \Waka\SalesForce\Classes\SalesForceConfig();
         $sf->execImports();
         return \Redirect::refresh();
-
-        // $filleulCOnfig = $sf->getOneConfig('importParrains');
-        // $sfImport = new \Waka\SalesForce\Classes\SalesForceImport($filleulCOnfig);
-        // $sfImport->executeQuery();
-        //$falseResult = $this->getFalseResult();
-        // trace_log($sfImport->prepareQuery());
-        //$sfImport->mapResults($falseResult);
-        // trace_log("---Real---");
-
     }
 
     public function onReinitaliseImport()
@@ -97,17 +91,14 @@ class Logsfs extends Controller
         $accounts = null;
         $sf = new \Waka\SalesForce\Classes\SalesForceConfig();
         $sf->execImports();
-        // return \Redirect::refresh();
-        //$falseResult = $this->getFalseResult();
-        // trace_log($sfImport->prepareQuery());
-        //$sfImport->mapResults($falseResult);
-        // trace_log("---Real---");
-
     }
 
     public function onCallImportPopup()
     {
-
+        $sf = new \Waka\SalesForce\Classes\SalesForceConfig();
+        $this->sfpopupWidget->getField('active_imports')->options = $sf->lists('import');
+        $this->vars['sfpopupWidget'] = $this->sfpopupWidget;
+        return $this->makePartial('$/waka/salesforce/controllers/logsfs/_popup_config.htm');
     }
 
     public function onImportValidation()
@@ -123,6 +114,17 @@ class Logsfs extends Controller
     public function onExportValidation()
     {
 
+    }
+
+    public function createSfPopupWidget()
+    {
+        $config = $this->makeConfig('$/waka/salesforce/controllers/logsfs/config_popup.yaml');
+        $config->alias = 'sfBehaviorformWidget';
+        $config->arrayName = 'sfBehavior_array';
+        $config->model = new \Model();
+        $widget = $this->makeWidget('Backend\Widgets\Form', $config);
+        $widget->bindToController();
+        return $widget;
     }
 
     public function getFalseResult()
