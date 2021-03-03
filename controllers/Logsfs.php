@@ -3,6 +3,9 @@
 use BackendMenu;
 use Backend\Classes\Controller;
 use System\Classes\SettingsManager;
+use Wcli\Wconfig\Models\Settings;
+use Waka\SalesForce\Classes\SalesForceImport;
+
 
 /**
  * Logsf Back-end Controller
@@ -47,11 +50,11 @@ class Logsfs extends Controller
 
     // }
 
-    public function isSfAuthenticate()
+    public function isSfWuAuthenticate()
     {
-        trace_log("Est ce qu'il est auth");
+        
         try {
-            $forrest = \Forrest::identity();
+            $forrest = \Forrest::refresh();
         } catch (\Exception $e) {
             trace_log("erreur");
             return false;
@@ -80,17 +83,11 @@ class Logsfs extends Controller
 
     public function onManualImport()
     {
-        $accounts = null;
-        $sf = new \Waka\SalesForce\Classes\SalesForceConfig();
-        $sf->execImports();
+        $imports = Settings::get('sf_active_imports');
+        foreach ($imports as $import) {
+            SalesForceImport::find($import)->executeQuery();
+        }
         return \Redirect::refresh();
-    }
-
-    public function onReinitaliseImport()
-    {
-        $accounts = null;
-        $sf = new \Waka\SalesForce\Classes\SalesForceConfig();
-        $sf->execImports();
     }
 
     public function onCallImportPopup()

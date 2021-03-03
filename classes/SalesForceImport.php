@@ -12,6 +12,7 @@ class SalesForceImport
     public $mappedRows;
     public $logsf;
     public $doLog;
+    public static $config;
 
     public static function find($key)
     {
@@ -21,73 +22,85 @@ class SalesForceImport
             throw new \ApplicationException("La clef " . $key . " n'existe pas sans wconfig->salesforce.yaml ");
         } else {
             self::$config = $salesForceConfgs[$key];
-            self::instanciateValues();
+            trace_log(self::$config);
         }
         return new self;
+    }
+
+    public function getConfig($key) {
+        return self::$config[$key] ?? null;
+    }
+    public function setConfig($key, $value) {
+        self::$config[$key] = $value;
     }
 
     public function addOptions($array)
     {
         foreach ($array as $key => $value) {
-            $this->config[$key] = $value;
+            $this->setConfig($key, $value);
         }
         return $this;
     }
 
     public function changeMainDate($dateObj)
     {
-        $mainDateConfig = $this->config['vars']['main_date'] ?? false;
+        $mainDateConfig = $this->getConfig('vars')['main_date'] ?? false;
         if ($mainDateConfig) {
-            $this->config['vars']['main_date'] = $dateObj;
+            $this->setConfig('vars')['main_date'] = $dateObj;
         }
         return $this;
     }
 
-    public function checkAndConfigImport(array $config)
+    public function checkAndConfigImport()
     {
-        if (!$this->config['query'] ?? false) {
+        if (!$this->getConfig('query')) {
             throw new \ApplicationException("Erreur : le query n'est pas renseigné");
         }
-        if (!$this->config['model'] ?? false) {
-            throw new \ApplicationException("Erreur : le model n'est pas renseigné");
-        }
-        if (!$this->config['name'] ?? false) {
+        
+        if (!$this->getConfig('name')) {
             throw new \ApplicationException("Erreur : le name n'est pas renseigné");
         }
         //Gestion des deux types de configurations.
-        $query_model = $this->config['query_model'] ?? false;
-        $query_fnc = $this->config['query_fnc'] ?? false;
+        $query_model = $this->getConfig('query_model');
+        $query_fnc = $this->getConfig('query_fnc');
+        trace_log($query_model);
+        trace_log($query_fnc);
+
         $cconfigOk = false;
         if ($query_model && $query_fnc) {
+            trace_log("C 'est ok");
             $configOk = true;
-        } elseif ($this->config['mapping'] ?? false) {
+        } elseif ($this->getConfig('mapping')) {
+            if (!$this->getConfig('model')) {
+                throw new \ApplicationException("Erreur : le model n'est pas renseigné");
+            }
             $configOk = true;
         }
-        if (!$cconfigOk) {
+        if (!$configOk) {
             throw new \ApplicationException("Erreur : Soit query_model & query_fnc doit exister soit mapping");
         }
-        if ($config['log'] ?? true) {
-            $this->doLog = true;
-        }
-        $vars = $this->config['vars'] ?? null;
+        $this->doLog = true;
+        $vars = $this->getConfig('vars') ?? null;
     }
 
-    public function getSrConfig()
+    public static function getSrConfig()
     {
-        $configYaml = Config::get('wcli.wconfig::salesForce.src');
+        $configYaml = \Config::get('wcli.wconfig::salesForce.src');
         if ($configYaml) {
-            return Yaml::parseFile(plugins_path() . $configYaml);
+            return \Yaml::parseFile(plugins_path() . $configYaml);
         } else {
-            return Yaml::parseFile(plugins_path() . '/wcli/wconfig/config/salesforce.yaml');
+            return \Yaml::parseFile(plugins_path() . '/wcli/wconfig/config/salesforce.yaml');
         }
 
     }
 
     public function prepareQuery()
     {
-        $query = $this->config['query'];
-        if ($config['vars'] ?? false) {
-            $vars = $this->prepareVars($config['vars']);
+        $query = $this->getConfig('query');
+        $vars = $this->getConfig('vars');
+        if ($vars) {
+            $vars = $this->prepareVars($vars);
+            trace_log($vars);
             $query = \Twig::parse($query, $vars);
         }
         return $query;
@@ -120,27 +133,31 @@ class SalesForceImport
                 default:
                     $vars[$key] = $var;
             }
-            return $vars;
+            
         }
+        return $vars;
     }
 
     public function executeQuery()
     {
         $this->checkAndConfigImport();
         $query = $this->prepareQuery();
+        trace_log($query);
         $this->logsf = $this->createLog($query);
         $this->mappedRows = 0;
         $this->sendQuery($query);
-        $this->updateAndCloseLog($logsf);
+        $this->updateAndCloseLog($this->logsf);
     }
     public function sendQuery($query = null, $next = null)
     {
         if (!$next && $query) {
             $result = \Forrest::query($query);
             $this->updateLog('sf_total_size', $result['totalSize'] ?? null);
-            if ($this->config['query_model'] ?? false) {
-                $classImport = $this->config['query_model'];
-                $this->mappedRows += $classImport->{$this->config['query_fnc']}($result['records']);
+            if ($this->getConfig('query_model')) {
+                $classImport = $this->getConfig('query_model');
+                $classImport = new $classImport;
+                $fnc = $this->getConfig('query_fnc');
+                $this->mappedRows += $classImport->{$fnc}($result['records']);
             } else {
                 $this->mapResults($result['records']);
             }
@@ -148,9 +165,11 @@ class SalesForceImport
             $this->sendQuery(null, $next);
         } else if ($next) {
             $result = \Forrest::next($next);
-            if ($this->config['query_model'] ?? false) {
-                $classImport = $this->config['query_model'];
-                $this->mappedRows += $classImport->{$this->config['query_fnc']}($result['records']);
+            if ($this->getConfig('query_model')) {
+                $classImport = $this->getConfig('query_model');
+                $classImport = new $classImport;
+                $fnc = $this->getConfig('query_fnc');
+                $this->mappedRows += $classImport->{$fnc}($result['records']);
             } else {
                 $this->mapResults($result['records']);
             }
@@ -165,7 +184,7 @@ class SalesForceImport
     {
         foreach ($rows as $row) {
             $mappedRow = $this->mapResult($row);
-            $model = $this->config['model'];
+            $model = $this->getConfig('model');
             if (method_exists($model, 'withTrashed')) {
                 $model = $this->model::withTrashed();
                 $mappedRow['deleted_at'] = null;
@@ -203,7 +222,7 @@ class SalesForceImport
         $finalResult = [];
         foreach ($row as $column => $value) {
             //trace_log($column);
-            $finalKey = $this->config['mapping'][$column] ?? null;
+            $finalKey = $this->getConfig('mapping')[$column] ?? null;
             if (!$finalKey) {
                 continue;
             }
@@ -214,7 +233,7 @@ class SalesForceImport
 
     public function transform($key, $value)
     {
-        $transform = $this->config['transform'][$key] ?? null;
+        $transform = $this->getConfig('transform')[$key] ?? null;
         if (!$transform) {
             return $value;
         }
@@ -244,7 +263,7 @@ class SalesForceImport
 
     public function getLastLogDate()
     {
-        $lastImport = Logsf::where('name', $this->config['name'])->where('is_ended', true)->orderBy('created_at', 'desc')->first();
+        $lastImport = Logsf::where('name', $this->getConfig('name'))->where('is_ended', true)->orderBy('created_at', 'desc')->first();
         if ($lastImport) {
             return $lastImport->created_at;
         } else {
@@ -258,37 +277,38 @@ class SalesForceImport
      * Creattion des logs
      */
 
-    public function createLog()
+    public function createLog($query)
     {
-        if (!$this->doLog) {
-            return null;
-        }
+        // if (!$this->doLog) {
+        //     return null;
+        // }
         $logsf = Logsf::create([
-            'name' => $this->config['name'],
+            'name' => $this->getConfig('name'),
             'start_at' => $this->getLastLogDate(),
+            'query' => $query,
         ]);
         return $logsf;
     }
     public function updateLog($var, $value, $logsf = null)
     {
-        if (!$this->doLog) {
-            return null;
+        // if (!$this->doLog) {
+        //     return null;
+        // }
+        if (!$logsf) {
+            $logsf = $this->logsf;
         }
         if (!$logsf) {
-            $logsf = $this->$logsf;
-        }
-        if (!$logSf) {
             throw new \ApplicationException('Erreur au niveau des logsf');
         }
         $logsf->update([
             $var => $value,
         ]);
     }
-    public function updateAndCloseLog($logSf)
+    public function updateAndCloseLog($logsf)
     {
-        if (!$this->doLog) {
-            return null;
-        }
+        // if (!$this->doLog) {
+        //     return null;
+        // }
         $logsf->update([
             'is_ended' => true,
             'ended_at' => Carbon::now(),

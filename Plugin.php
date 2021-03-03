@@ -82,8 +82,8 @@ class Plugin extends PluginBase
                 //trace_log("OK je lance l'import");
                 //Lancement du CRON
                 $imports = Settings::get('sf_active_imports');
-                foreach ($imports as $key => $import) {
-                    SalesForceImport::find($key)->executeQuery();
+                foreach ($imports as $import) {
+                    SalesForceImport::find($import)->executeQuery();
                 }
                 //trace_log("Import terminé");
                 //A la fin j'envoie le mail de bilan aux collaborateurs

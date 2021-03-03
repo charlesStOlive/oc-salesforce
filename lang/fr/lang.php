@@ -24,8 +24,8 @@ return [
         'authorize_button' => "Connecter",
     ],
     'logsf' => [
-        "manual" => "Import Manuel",
-        "manual_all" => "Tout reinitaliser",
+        "manual_auto" => "Forcer Import automatique",
+        "manual_popup" => "Choisir les imports et des options",
         'name' => "Nom de l'import",
         'nb' => 'Nombre de lignes',
         'create' => 'Créer un log',
