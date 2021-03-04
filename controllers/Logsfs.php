@@ -3,9 +3,8 @@
 use BackendMenu;
 use Backend\Classes\Controller;
 use System\Classes\SettingsManager;
-use Wcli\Wconfig\Models\Settings;
 use Waka\SalesForce\Classes\SalesForceImport;
-
+use Wcli\Wconfig\Models\Settings;
 
 /**
  * Logsf Back-end Controller
@@ -15,7 +14,7 @@ class Logsfs extends Controller
     public $implement = [
         'Backend.Behaviors.FormController',
         'Backend.Behaviors.ListController',
-        'Backend.Behaviors.RelationController',
+        'Backend.Behaviors.RelationController'
 
     ];
 
@@ -52,7 +51,7 @@ class Logsfs extends Controller
 
     public function isSfWuAuthenticate()
     {
-        
+
         try {
             $forrest = \Forrest::refresh();
         } catch (\Exception $e) {
@@ -100,17 +99,14 @@ class Logsfs extends Controller
 
     public function onImportValidation()
     {
-
     }
 
     public function onCallExportValidation()
     {
-
     }
 
     public function onExportValidation()
     {
-
     }
 
     public function createSfPopupWidget()
@@ -234,5 +230,4 @@ class Logsfs extends Controller
         $results[2] = \Waka\Utils\Classes\ReverseLogArray::print_r_reverse(trim($array3));
         return $results;
     }
-
 }

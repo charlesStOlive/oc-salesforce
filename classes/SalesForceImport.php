@@ -27,10 +27,12 @@ class SalesForceImport
         return new self;
     }
 
-    public function getConfig($key) {
+    public function getConfig($key)
+    {
         return self::$config[$key] ?? null;
     }
-    public function setConfig($key, $value) {
+    public function setConfig($key, $value)
+    {
         self::$config[$key] = $value;
     }
 
@@ -91,7 +93,6 @@ class SalesForceImport
         } else {
             return \Yaml::parseFile(plugins_path() . '/wcli/wconfig/config/salesforce.yaml');
         }
-
     }
 
     public function prepareQuery()
@@ -133,7 +134,6 @@ class SalesForceImport
                 default:
                     $vars[$key] = $var;
             }
-            
         }
         return $vars;
     }
@@ -163,7 +163,7 @@ class SalesForceImport
             }
             $next = $result['nextRecordsUrl'] ?? null;
             $this->sendQuery(null, $next);
-        } else if ($next) {
+        } elseif ($next) {
             $result = \Forrest::next($next);
             if ($this->getConfig('query_model')) {
                 $classImport = $this->getConfig('query_model');
@@ -212,7 +212,6 @@ class SalesForceImport
                     $this->logsf->logsfErrors()->add($logsfError);
                 }
             }
-
         }
     }
 
@@ -270,7 +269,6 @@ class SalesForceImport
             $date = Settings::get('sf_oldest_date');
             return Carbon::parse($date);
         }
-
     }
 
     /**
@@ -316,5 +314,4 @@ class SalesForceImport
         ]);
         return $logsf;
     }
-
 }

@@ -46,7 +46,6 @@ class Plugin extends PluginBase
      */
     public function register()
     {
-
     }
 
     public function registerSchedule($schedule)
@@ -59,8 +58,8 @@ class Plugin extends PluginBase
             //trace_log($usersIds);
             $forrest = false;
             try {
-
-                \Forrest::refresh();;
+                \Forrest::refresh();
+                ;
                 $forrest = true;
                 //trace_log("Je tente une connection");
             } catch (\Exception $e) {
@@ -98,11 +97,9 @@ class Plugin extends PluginBase
                         $mail->renderMail($user->id, $datasEmail);
                     }
                 }
-
             }
             //})->everyMinute();
         })->dailyAt(Carbon::parse(Settings::get('sf_cron_time'))->format('H:i'));
-
     }
 
     /**
@@ -173,7 +170,6 @@ class Plugin extends PluginBase
                 return $sf->lists('import');
             });
         });
-
     }
 
     public function bootPackages()
