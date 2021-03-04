@@ -36,5 +36,6 @@ return [
         "nb_updated_rows" => "Lignes enregistrées",
         'query' => 'Requête',
         "import_indicator" => "Chargement des données en cours",
+        "Charger des données SalesForce",
     ],
 ];

@@ -22,7 +22,7 @@ class SalesForceImport
             throw new \ApplicationException("La clef " . $key . " n'existe pas sans wconfig->salesforce.yaml ");
         } else {
             self::$config = $salesForceConfgs[$key];
-            trace_log(self::$config);
+            //trace_log(self::$config);
         }
         return new self;
     }
@@ -44,12 +44,16 @@ class SalesForceImport
         return $this;
     }
 
-    public function changeMainDate($dateObj)
+    public function changeMainDate($date)
     {
-        $mainDateConfig = $this->getConfig('vars')['main_date'] ?? false;
-        if ($mainDateConfig) {
-            $this->setConfig('vars')['main_date'] = $dateObj;
+        $vars = $this->getConfig('vars');
+        foreach ($vars as $key => $var) {
+            if ($key == 'main_date') {
+                $vars[$key]['mode'] = 'perso';
+                $vars[$key]['date'] = $date;
+            }
         }
+        $this->setConfig('vars', $vars);
         return $this;
     }
 
@@ -65,12 +69,12 @@ class SalesForceImport
         //Gestion des deux types de configurations.
         $query_model = $this->getConfig('query_model');
         $query_fnc = $this->getConfig('query_fnc');
-        trace_log($query_model);
-        trace_log($query_fnc);
+        //trace_log($query_model);
+        //trace_log($query_fnc);
 
         $cconfigOk = false;
         if ($query_model && $query_fnc) {
-            trace_log("C 'est ok");
+            //trace_log("C 'est ok");
             $configOk = true;
         } elseif ($this->getConfig('mapping')) {
             if (!$this->getConfig('model')) {
@@ -101,7 +105,7 @@ class SalesForceImport
         $vars = $this->getConfig('vars');
         if ($vars) {
             $vars = $this->prepareVars($vars);
-            trace_log($vars);
+            //trace_log($vars);
             $query = \Twig::parse($query, $vars);
         }
         return $query;
@@ -143,10 +147,10 @@ class SalesForceImport
         $this->checkAndConfigImport();
         $query = $this->prepareQuery();
         trace_log($query);
-        $this->logsf = $this->createLog($query);
-        $this->mappedRows = 0;
-        $this->sendQuery($query);
-        $this->updateAndCloseLog($this->logsf);
+        // $this->logsf = $this->createLog($query);
+        // $this->mappedRows = 0;
+        // $this->sendQuery($query);
+        // $this->updateAndCloseLog($this->logsf);
     }
     public function sendQuery($query = null, $next = null)
     {

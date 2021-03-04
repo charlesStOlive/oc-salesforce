@@ -5,7 +5,7 @@ fields:
     quickselect: true 
     options: listImports
 
-  oldest_date:
+  main_date:
     label: waka.salesforce::lang.settings.oldest_date
     type: datepicker
     mode: date

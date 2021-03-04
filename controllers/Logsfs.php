@@ -89,7 +89,7 @@ class Logsfs extends Controller
         return \Redirect::refresh();
     }
 
-    public function onCallImportPopup()
+    public function onCallSfImportPopup()
     {
         $sf = new \Waka\SalesForce\Classes\SalesForceConfig();
         $this->sfpopupWidget->getField('active_imports')->options = $sf->lists('import');
@@ -97,8 +97,13 @@ class Logsfs extends Controller
         return $this->makePartial('$/waka/salesforce/controllers/logsfs/_popup_config.htm');
     }
 
-    public function onImportValidation()
+    public function onSfImportValidation()
     {
+        $options = post('sfBehavior_array');
+        $imports = $options['active_imports'];
+        foreach ($imports as $import) {
+            SalesForceImport::find($import)->changeMainDate($options['main_date'])->executeQuery();
+        }
     }
 
     public function onCallExportValidation()
