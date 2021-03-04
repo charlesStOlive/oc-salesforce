@@ -11,10 +11,10 @@
 <?=Form::open(['class' => 'layout'])?>
 
 <div class="layout-row">
-    <?=$this->formRender() ?>
+    <?=$this->formRender()?>
 </div>
 
-<div class="form-buttons"> 
+<div class="form-buttons">
     <div class="loading-indicator-container">
         <button type="submit"
          data-request="onSave" data-request-data="redirect:0" data-hotkey="ctrl+s, cmd+s" data-load-indicator="<?=e(trans('waka.utils::lang.global.save_indicator'))?>" class="btn btn-primary">
@@ -28,7 +28,7 @@
         <?=$this->fireViewEvent('backend.down.update')?>
         <?=$this->fireViewEvent('backend.update.prod')?>
         <span class="btn-text">
-                         or <a href="<?=Backend::url('waka/salesforce/logsfs')?>"><?=e(trans('waka.utils::lang.global.cancel'))?></a>
+             or <a href="<?=Backend::url('waka/salesforce/logsfs')?>"><?=e(trans('waka.utils::lang.global.cancel'))?></a>
         </span>
     </div>
 </div>
@@ -41,4 +41,4 @@
 </p>
 <p><a href="<?=Backend::url('waka/salesforce/logsfs')?>" class="btn btn-default">Return to logsf list</a></p>
 
-<?php endif
+<?php endif?>
