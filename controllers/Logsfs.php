@@ -34,11 +34,11 @@ class Logsfs extends Controller
 
     // public function isSfAuthorized()
     // {
-    //     trace_log("Est ce qu'il est auth");
+    //     //trace_log("Est ce qu'il est auth");
     //     try {
     //         $forrest = \Forrest::identity();
     //         if ($forrest) {
-    //             trace_log($forrest);
+    //             //trace_log($forrest);
     //             return true;
     //         } else {
     //             return false;
@@ -55,7 +55,7 @@ class Logsfs extends Controller
         try {
             $forrest = \Forrest::refresh();
         } catch (\Exception $e) {
-            trace_log("erreur");
+            //trace_log("erreur");
             return false;
         }
         if ($forrest) {
@@ -73,7 +73,7 @@ class Logsfs extends Controller
             return false;
         }
         if ($forrest) {
-            trace_log(get_class($forrest));
+            //trace_log(get_class($forrest));
             return true;
         } else {
             return $this->tryToConnect();

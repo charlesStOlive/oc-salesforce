@@ -146,7 +146,7 @@ class SalesForceImport
     {
         $this->checkAndConfigImport();
         $query = $this->prepareQuery();
-        trace_log($query);
+        //trace_log($query);
         // $this->logsf = $this->createLog($query);
         // $this->mappedRows = 0;
         // $this->sendQuery($query);
