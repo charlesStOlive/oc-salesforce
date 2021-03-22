@@ -269,7 +269,7 @@ class Plugin extends PluginBase
                 'label' => Lang::get('waka.salesforce::lang.menu.logsf'),
                 'description' => Lang::get('waka.salesforce::lang.menu.logsf_description'),
                 'category' => Lang::get('waka.salesforce::lang.menu.category'),
-                'icon' => 'icon-skyatlas',
+                'icon' => 'wicon-salesforce',
                 'url' => Backend::url('waka/salesforce/logsfs'),
                 'order' => 130,
                 'permissions' => ['waka.salesforce.admin'],
