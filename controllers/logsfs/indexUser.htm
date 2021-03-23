@@ -1,0 +1,26 @@
+<div class="p-a">
+    <?php if(!$this->isSfWuAuthenticate()) : ?>
+    <div class="callout fade in callout-danger">
+        <div class="header">
+            <i class="icon-warning"></i>
+            <h3><?=e(trans('waka.salesforce::lang.global.unauthorized'));?></h3>
+            <p><?=e(trans('waka.salesforce::lang.global.unauthorized_comment'));?></p>
+        </div>
+        <div class="content">
+            <p><a href="/api/sf/wu/authenticate" class="btn btn-primary">
+                    <?=e(trans('waka.salesforce::lang.global.authorize_button'));?>
+                </a>
+            </p>
+        </div>
+    </div>
+    <?php else : ?>
+    <div class="callout fade in callout-success">
+        <div class="header">
+            <i class="icon-check"></i>
+            <h3><?=e(trans('waka.salesforce::lang.global.authorized'));?></h3>
+            <p><?=e(trans('waka.salesforce::lang.global.authorized_comment'));?></p>
+        </div>
+    </div>
+    <?php endif ?>
+</div>
+<?= $this->listRender() ?>
