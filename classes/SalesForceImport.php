@@ -46,18 +46,20 @@ class SalesForceImport
 
     public function changeMainDate($date)
     {
-        $vars = $this->getConfig('vars');
-        foreach ($vars as $key => $var) {
-            if ($key == 'main_date') {
-                $vars[$key]['mode'] = 'perso';
-                $vars[$key]['date'] = $date;
+        if($date) {
+            $vars = $this->getConfig('vars');
+            foreach ($vars as $key => $var) {
+                if ($key == 'main_date') {
+                    $vars[$key]['mode'] = 'perso';
+                    $vars[$key]['date'] = $date;
+                }
             }
+            $this->setConfig('vars', $vars);
         }
-        $this->setConfig('vars', $vars);
         return $this;
     }
 
-    public function checkAndConfigImport()
+    private function checkAndConfigImport()
     {
         if (!$this->getConfig('query')) {
             throw new \ApplicationException("Erreur : le query n'est pas renseigné");
@@ -86,7 +88,7 @@ class SalesForceImport
             throw new \ApplicationException("Erreur : Soit query_model & query_fnc doit exister soit mapping");
         }
         $this->doLog = true;
-        $vars = $this->getConfig('vars') ?? null;
+        return $configOk;
     }
 
     public static function getSrConfig()
@@ -99,7 +101,7 @@ class SalesForceImport
         }
     }
 
-    public function prepareQuery()
+    private function prepareQuery()
     {
         $query = $this->getConfig('query');
         $vars = $this->getConfig('vars');
@@ -111,7 +113,7 @@ class SalesForceImport
         return $query;
     }
 
-    public function prepareVars($vars)
+    private function prepareVars($vars)
     {
         foreach ($vars as $key => $var) {
             $optformat = $var['format'] ?? 'time';
@@ -130,7 +132,11 @@ class SalesForceImport
                     $vars[$key] = Carbon::now()->subYear()->format($format);
                     break;
                 case "l_log":
+                    trace_log("last log date");
+                    trace_log($this->getLastLogDate());
+                    trace_log($this->getLastLogDate()->format($format));
                     $vars[$key] = $this->getLastLogDate()->format($format);
+                    trace_log("fin last log");
                     break;
                 case "perso":
                     $vars[$key] = Carbon::parse($var['date'])->format($format);
@@ -142,50 +148,84 @@ class SalesForceImport
         return $vars;
     }
 
-    public function executeQuery()
+    public function executeQuery($all = false)
     {
         \Forrest::authenticate();
-        $this->checkAndConfigImport();
+        $configOk = $this->checkAndConfigImport();
+        if(!$configOk) {
+            throw new \ApplicationException("Erreur Inconnu dans la config");
+        }
         $query = $this->prepareQuery();
-        trace_log($query);
         $this->logsf = $this->createLog($query);
         $this->mappedRows = 0;
-        $this->sendQuery($query);
-        $this->updateAndCloseLog($this->logsf);
-    }
-    public function sendQuery($query = null, $next = null)
-    {
-        if (!$next && $query) {
-            $result = \Forrest::query($query);
-            $this->updateLog('sf_total_size', $result['totalSize'] ?? null);
-            if ($this->getConfig('query_model')) {
-                $classImport = $this->getConfig('query_model');
-                $classImport = new $classImport;
-                $fnc = $this->getConfig('query_fnc');
-                $this->mappedRows += $classImport->{$fnc}($result['records']);
-            } else {
-                $this->mapResults($result['records']);
+        if($all) {
+            $firstQuery =  $this->sendFirstQuery($query);
+            $next = $firstQuery['next'] ?? null;
+            $records = $firstQuery['records'];
+            $this->handleRequest($records);
+            if($next) {
+                $this->sendAllNextQuery($next);
             }
-            $next = $result['nextRecordsUrl'] ?? null;
-            $this->sendQuery(null, $next);
-        } elseif ($next) {
-            $result = \Forrest::next($next);
-            if ($this->getConfig('query_model')) {
-                $classImport = $this->getConfig('query_model');
-                $classImport = new $classImport;
-                $fnc = $this->getConfig('query_fnc');
-                $this->mappedRows += $classImport->{$fnc}($result['records']);
-            } else {
-                $this->mapResults($result['records']);
-            }
-            $next = $result['nextRecordsUrl'] ?? null;
-            $this->sendQuery(null, $next);
+            return [
+               'totalSize' => $firstQuery['totalSize'],
+            ];
         } else {
-            //trace_log('Terminé plus de next');
+            return $this->sendFirstQuery($query); 
+        }
+    }
+    public function sendFirstQuery($query = null) {
+        $result = \Forrest::query($query);
+        $totalSize = $result['totalSize'] ?? null;
+        $next = $result['nextRecordsUrl'] ?? null;
+        $records = $result['records'];
+        $this->updateLog('sf_total_size', $totalSize);
+        return [
+            'totalSize' => $totalSize,
+            'next' => $next,
+            'records' => $records
+        ];
+    }
+    public function sendNextQuery($next) {
+        \Forrest::authenticate();
+        $result = \Forrest::next($next);
+        $records = $result['records'] ?? null;
+        if($records) {
+            $this->handleRequest($records);
+        }
+        $next = $result['nextRecordsUrl'] ?? null;
+        return $next;
+    }
+
+    public function sendAllNextQuery($next) {
+        \Forrest::authenticate();
+        $result = \Forrest::next($next);
+        $records = $result['records'] ?? null;
+        if($records) {
+            $this->handleRequest($records);
+        }
+        $newNext = $result['nextRecordsUrl'] ?? null;
+        if($newNext) {
+            trace_log("newNext");
+            $this->sendAllNextQuery($newNext);
+        } else {
+            $this->updateAndCloseLog($this->logsf);
+        }
+        
+    }
+    
+
+    public function handleRequest($records) {
+        if ($this->getConfig('query_model')) {
+            $classImport = $this->getConfig('query_model');
+            $classImport = new $classImport;
+            $fnc = $this->getConfig('query_fnc');
+            $this->mappedRows += $classImport->{$fnc}($records);
+        } else {
+            $this->mapResults($records);
         }
     }
 
-    public function mapResults($rows)
+    private function mapResults($rows)
     {
         foreach ($rows as $row) {
             $mappedRow = $this->mapResult($row);
@@ -220,7 +260,7 @@ class SalesForceImport
         }
     }
 
-    public function mapResult($row)
+    private function mapResult($row)
     {
         $row = array_dot($row);
         $finalResult = [];
@@ -235,7 +275,7 @@ class SalesForceImport
         return $finalResult;
     }
 
-    public function transform($key, $value)
+    private function transform($key, $value)
     {
         $transform = $this->getConfig('transform')[$key] ?? null;
         if (!$transform) {
@@ -265,13 +305,17 @@ class SalesForceImport
      * Travail sur lastLog pour preparer les requetes last_log : va importer uniquement les lignes MAJ depuis un dernier import réussi.
      */
 
-    public function getLastLogDate()
+    private function getLastLogDate()
     {
         $lastImport = Logsf::where('name', $this->getConfig('name'))->where('is_ended', true)->orderBy('created_at', 'desc')->first();
         if ($lastImport) {
+            trace_log("last import");
+            trace_log($lastImport->created_at);
             return $lastImport->created_at;
         } else {
+            trace_log("PAS DE last import");
             $date = Settings::get('sf_oldest_date');
+            trace_log(Carbon::parse($date));
             return Carbon::parse($date);
         }
     }
@@ -307,16 +351,16 @@ class SalesForceImport
             $var => $value,
         ]);
     }
-    public function updateAndCloseLog($logsf)
+    public function updateAndCloseLog()
     {
         // if (!$this->doLog) {
         //     return null;
         // }
-        $logsf->update([
+        $this->logsf->update([
             'is_ended' => true,
             'ended_at' => Carbon::now(),
             'nb_updated_rows' => $this->mappedRows,
         ]);
-        return $logsf;
+        return $this->logsf;
     }
 }

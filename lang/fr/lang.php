@@ -38,4 +38,7 @@ return [
         "import_indicator" => "Chargement des données en cours",
         "Charger des données SalesForce",
     ],
+    'job' => [
+        'title' => "Requête SalesForce"
+    ],
 ];

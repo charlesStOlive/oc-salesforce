@@ -118,7 +118,14 @@ class Logsfs extends Controller
         $options = post('sfBehavior_array');
         $imports = $options['active_imports'];
         foreach ($imports as $import) {
-            SalesForceImport::find($import)->changeMainDate($options['main_date'])->executeQuery();
+            $datas = [
+                'productorId' => $import,
+                'options' => $options
+            ];
+            $job = new \Waka\SalesForce\Jobs\ImportSf($datas);
+            $jobManager = \App::make('Waka\Wakajob\Classes\JobManager');
+            $jobManager->dispatch($job, "Chargement SalesForce ".$import);
+            //SalesForceImport::find($import)->changeMainDate($options['main_date'])->executeQuery();
         }
     }
 

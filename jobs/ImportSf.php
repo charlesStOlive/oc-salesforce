@@ -11,7 +11,7 @@ use Waka\Wakajob\Classes\RequestSender;
 use Waka\Wakajob\Contracts\WakajobQueueJob;
 use October\Rain\Database\Model;
 use Viamage\CallbackManager\Models\Rate;
-use Waka\Mailer\Classes\MailCreator;
+use Waka\SalesForce\Classes\SalesForceImport;
 use Waka\Utils\Classes\DataSource;
 
 /**
@@ -54,6 +54,16 @@ class ImportSf implements WakajobQueueJob
     private $table;
 
     /**
+     * @var int
+     */
+    private $loop;
+
+    /**
+     * @var int
+     */
+    private $JobManager;
+
+    /**
      * @param int $id
      */
     public function assignJobId(int $id)
@@ -75,7 +85,7 @@ class ImportSf implements WakajobQueueJob
     {
         $this->data = $data;
         $this->updateExisting = true;
-        $this->chunk = 1;
+        
     }
 
     /**
@@ -85,89 +95,70 @@ class ImportSf implements WakajobQueueJob
      */
     public function handle(JobManager $jobManager)
     {
+        $this->jobManager = $jobManager;
         /**
          * travail preparatoire sur les donnes
          */
-        $productorId = $this->data['productorId'];
-        $mailCreator = MailCreator::find($productorId);
-        $modelDataSource = $mailCreator->getProductor()->data_source;
-        $ds = new DataSource($modelDataSource);
-        //
-        $targets = $this->data['listIds'];
-
-        //trace_log($targets);
-        //trace_log("lancement du JOB mail");
-
+        $sfCode = $this->data['productorId'];
+        $mainDate = $this->data['options']['main_date'] ?? null;
+        $sfImporter = SalesForceImport::find($sfCode)->changeMainDate($mainDate);
+        $firstQuery = $sfImporter->executeQuery();
+        $totalSize = $firstQuery['totalSize'];
+        trace_log($totalSize);
+        $this->chunk = ceil($totalSize / 2000);
+        trace_log($this->chunk);
 
         /**
          * We initialize database job. It has been assigned ID on dispatching,
          * so we pass it together with number of all elements to proceed (max_progress)
          */
-        $loop = 1;
-        $jobManager->startJob($this->jobId, \count($targets));
+        $this->loop = 1;
+        $this->jobManager->startJob($this->jobId, $this->chunk);
         $send = 0;
         $scopeError = 0;
         $skipped = 0;
-        // Fin inistialisation
-
-        //Travail sur les données
-        $targets = array_chunk($targets, $this->chunk);
-
-        //trace_log($targets);
-        
         try {
-            foreach ($targets as $chunk) {
-                foreach ($chunk as $targetId) {
-                    // TACHE DU JOB
-                    if ($jobManager->checkIfCanceled($this->jobId)) {
-                        $jobManager->failJob($this->jobId);
-                        break;
-                    }
-                    $jobManager->updateJobState($this->jobId, $loop);
-                    /**
-                     * DEBUT TRAITEMENT **************
-                     */
-                    //trace_log("DEBUT TRAITEMENT **************");
-                    $mailCreator->setModelId($targetId);
-                    $scopeIsOk = $mailCreator->checkScopes();
-                    if (!$scopeIsOk) {
-                        $scopeError++;
-                        continue;
-                    }
-                    $emails = $ds->getContact('to', $targetId);
-                    if (!$emails) {
-                        ++$skipped;
-                        continue;
-                    }
-                    $datasEmail = [
-                        'emails' => $emails,
-                        'subject' => $this->data['subject'] ?? null,
-                    ];
-                    //trace_log($datasEmail);
-                    
-                    
-                    $mailCreator->renderMail($datasEmail);
-                    ++$send;
-                    /**
-                     * FIN TRAITEMENT **************
-                     */
-                }
-                $loop += $this->chunk;
+            $sfImporter->handleRequest($firstQuery['records']);
+            trace_log($this->loop);
+            $this->jobManager->updateJobState($this->jobId, $this->loop);
+            $next = $firstQuery['next'];
+            if($next) {
+                $this->launchNext($sfImporter, $next);
+            } else {
+                $sfImporter->updateAndCloseLog();
+                $this->closejob();
             }
-            $jobManager->updateJobState($this->jobId, $loop);
-            $jobManager->completeJob(
-                $this->jobId,
-                [
-                'Message' => \count($targets).' '. \Lang::get('waka.mailer::wakamail.job_title'),
-                'waka.mailer::wakamail.job_send' => $send,
-                'waka.mailer::wakamail.job_scoped' => $scopeError,
-                'waka.mailer::wakamail.job_skipped' => $skipped,
-                ]
-            );
-        } catch (\Exception $ex) {
-            //trace_log("Exception");
+       } catch (\Exception $ex) {
             /**/trace_log($ex->getMessage());
-            $jobManager->failJob($this->jobId, ['error' => $ex->getMessage()]);
+            $this->jobManager->failJob($this->jobId, ['error' => $ex->getMessage()]);  
         }
+    }
+
+    private function launchNext($sfImporter, $next) {
+        $newNext = null;
+        if ($this->jobManager->checkIfCanceled($this->jobId)) {
+            $this->jobManager->failJob($this->jobId);
+        } else {
+            $newNext = $sfImporter->sendNextQuery($next);
+            $this->loop++;
+            trace_log($this->loop);
+            $this->jobManager->updateJobState($this->jobId, $this->loop);
+            if($newNext) {
+                $this->launchNext($sfImporter, $newNext);
+            } else {
+                $sfImporter->updateAndCloseLog();
+                $this->closejob();
+            }
+        }
+    }
+
+    private function closeJob() {
+        $this->jobManager->completeJob(
+            $this->jobId,
+            [
+            'Message' => \Lang::get('waka.salesforce::lang.job.title'),
+            ]
+        );
+        
     }
 }

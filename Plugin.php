@@ -50,15 +50,15 @@ class Plugin extends PluginBase
 
     public function registerSchedule($schedule)
     {
-        //trace_log(Carbon::parse(Settings::get('sf_cron_time'))->format('H:i'));
+        trace_log(Carbon::parse(Settings::get('sf_cron_time'))->format('H:i'));
         //Lancement des cron
         $schedule->call(function () {
-            //trace_log("Je lance le cron SF");
+            trace_log("Je lance le cron SF");
             $usersIds = Settings::get('sf_responsable');
             //trace_log($usersIds);
             $forrest = false;
             try {
-                \Forrest::refresh();
+                \Forrest::authenticate();
                 ;
                 $forrest = true;
                 //trace_log("Je tente une connection");
@@ -78,13 +78,13 @@ class Plugin extends PluginBase
                 }
             }
             if ($forrest) {
-                //trace_log("OK je lance l'import");
+                trace_log("OK je lance l'import");
                 //Lancement du CRON
                 $imports = Settings::get('sf_active_imports');
                 foreach ($imports as $import) {
-                    SalesForceImport::find($import)->executeQuery();
+                    $sfImportData = SalesForceImport::find($import)->executeQuery(true);
                 }
-                //trace_log("Import terminé");
+                trace_log("Import terminé");
                 //A la fin j'envoie le mail de bilan aux collaborateurs
                 foreach ($usersIds as $userId) {
                     $user = \Backend\Models\User::find($userId);
