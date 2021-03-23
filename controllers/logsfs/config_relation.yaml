@@ -11,4 +11,5 @@ logsfErrors:
         form: $/waka/salesforce/models/logsferror/fields.yaml
     view:
         list: $/waka/salesforce/models/logsferror/columns.yaml
+        recordsPerPage: 50
         toolbarButtons: delete

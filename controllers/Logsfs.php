@@ -49,6 +49,22 @@ class Logsfs extends Controller
 
     // }
 
+    public function isSfOauthAuthenticate()
+    {
+        $forrest = null;
+        try {
+            $forrest = \Forrest::authenticate();
+        } catch (\Exception $e) {
+            return false;
+        }
+        $identity = \Forrest::identity();
+        if ($identity) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     public function isSfWuAuthenticate()
     {
 

@@ -144,13 +144,14 @@ class SalesForceImport
 
     public function executeQuery()
     {
+        \Forrest::authenticate();
         $this->checkAndConfigImport();
         $query = $this->prepareQuery();
-        //trace_log($query);
-        // $this->logsf = $this->createLog($query);
-        // $this->mappedRows = 0;
-        // $this->sendQuery($query);
-        // $this->updateAndCloseLog($this->logsf);
+        trace_log($query);
+        $this->logsf = $this->createLog($query);
+        $this->mappedRows = 0;
+        $this->sendQuery($query);
+        $this->updateAndCloseLog($this->logsf);
     }
     public function sendQuery($query = null, $next = null)
     {
@@ -190,7 +191,7 @@ class SalesForceImport
             $mappedRow = $this->mapResult($row);
             $model = $this->getConfig('model');
             if (method_exists($model, 'withTrashed')) {
-                $model = $this->model::withTrashed();
+                $model = $model::withTrashed();
                 $mappedRow['deleted_at'] = null;
                 $id = array_shift($mappedRow);
                 try {

@@ -30,11 +30,11 @@
                     'loginURL' => env('SF_LOGIN_URL'),
 
                     // Only required for UserPassword authentication:
-                    //'username' => env('SF_USERNAME'),
+                    'username' => env('SF_USERNAME'),
                     // Security token might need to be ammended to password unless IP Address is whitelisted
                     //'password' => env('SF_PASSWORD'),
                     // Only required for OAuthJWT authentication:
-                    //'privateKey' => file_get_contents(base_path('privatekey.pem')),
+                    'privateKey' => file_get_contents(base_path('privatekey.pem')),
                 ],
 
                 /*

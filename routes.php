@@ -15,9 +15,6 @@ Route::group(['middleware' => ['web']], function () {
         return Forrest::authenticate();
     });
     Route::get('/api/sf/wu/callback', function () {
-        Forrest::callback();
-        //_log('account');
-        //trace_log(Forrest::resources());
         return \Redirect::to('/backend/waka/salesforce/logsfs');
     });
 });
