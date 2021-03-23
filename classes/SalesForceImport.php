@@ -132,11 +132,11 @@ class SalesForceImport
                     $vars[$key] = Carbon::now()->subYear()->format($format);
                     break;
                 case "l_log":
-                    trace_log("last log date");
-                    trace_log($this->getLastLogDate());
-                    trace_log($this->getLastLogDate()->format($format));
+                    //trace_log("last log date");
+                    //trace_log($this->getLastLogDate());
+                    //trace_log($this->getLastLogDate()->format($format));
                     $vars[$key] = $this->getLastLogDate()->format($format);
-                    trace_log("fin last log");
+                    //trace_log("fin last log");
                     break;
                 case "perso":
                     $vars[$key] = Carbon::parse($var['date'])->format($format);
@@ -205,7 +205,7 @@ class SalesForceImport
         }
         $newNext = $result['nextRecordsUrl'] ?? null;
         if($newNext) {
-            trace_log("newNext");
+            //trace_log("newNext");
             $this->sendAllNextQuery($newNext);
         } else {
             $this->updateAndCloseLog($this->logsf);
@@ -309,13 +309,13 @@ class SalesForceImport
     {
         $lastImport = Logsf::where('name', $this->getConfig('name'))->where('is_ended', true)->orderBy('created_at', 'desc')->first();
         if ($lastImport) {
-            trace_log("last import");
-            trace_log($lastImport->created_at);
+            //trace_log("last import");
+            //trace_log($lastImport->created_at);
             return $lastImport->created_at;
         } else {
-            trace_log("PAS DE last import");
+            //trace_log("PAS DE last import");
             $date = Settings::get('sf_oldest_date');
-            trace_log(Carbon::parse($date));
+            //trace_log(Carbon::parse($date));
             return Carbon::parse($date);
         }
     }

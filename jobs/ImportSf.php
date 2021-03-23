@@ -104,9 +104,9 @@ class ImportSf implements WakajobQueueJob
         $sfImporter = SalesForceImport::find($sfCode)->changeMainDate($mainDate);
         $firstQuery = $sfImporter->executeQuery();
         $totalSize = $firstQuery['totalSize'];
-        trace_log($totalSize);
+        //trace_log($totalSize);
         $this->chunk = ceil($totalSize / 2000);
-        trace_log($this->chunk);
+        //trace_log($this->chunk);
 
         /**
          * We initialize database job. It has been assigned ID on dispatching,
@@ -119,7 +119,7 @@ class ImportSf implements WakajobQueueJob
         $skipped = 0;
         try {
             $sfImporter->handleRequest($firstQuery['records']);
-            trace_log($this->loop);
+            //trace_log($this->loop);
             $this->jobManager->updateJobState($this->jobId, $this->loop);
             $next = $firstQuery['next'];
             if($next) {
@@ -141,7 +141,7 @@ class ImportSf implements WakajobQueueJob
         } else {
             $newNext = $sfImporter->sendNextQuery($next);
             $this->loop++;
-            trace_log($this->loop);
+            //trace_log($this->loop);
             $this->jobManager->updateJobState($this->jobId, $this->loop);
             if($newNext) {
                 $this->launchNext($sfImporter, $newNext);
