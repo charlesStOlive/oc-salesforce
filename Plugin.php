@@ -116,9 +116,6 @@ class Plugin extends PluginBase
         Event::listen('backend.form.extendFields', function ($widget) {
 
             //trace_log('yo');
-
-            // Only for the User controller
-
             if (!$widget->getController() instanceof \System\Controllers\Settings) {
                 return;
             }
@@ -241,16 +238,6 @@ class Plugin extends PluginBase
     public function registerNavigation()
     {
         return []; // Remove this line to activate
-
-        return [
-            'salesforce' => [
-                'label' => 'SalesForce',
-                'url' => Backend::url('waka/salesforce/mycontroller'),
-                'icon' => 'icon-leaf',
-                'permissions' => ['waka.salesforce.*'],
-                'order' => 500,
-            ],
-        ];
     }
     public function registerSettings()
     {
