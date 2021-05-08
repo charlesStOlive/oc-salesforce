@@ -223,9 +223,17 @@ class Plugin extends PluginBase
     public function registerPermissions()
     {
         return [
-            'waka.salesforce.admin' => [
-                'tab' => 'Waka -SalesForce',
-                'label' => 'Administrateur SalesForce',
+            'waka.salesforce.admin.super' => [
+                'tab' => 'Waka - Sales Force',
+                'label' => 'Super administrateur de Sales Force',
+            ],
+            'waka.salesforce.admin.base' => [
+                'tab' => 'Waka - Sales Force',
+                'label' => 'Administrateur de Sales Force',
+            ],
+            'waka.salesforce.user' => [
+                'tab' => 'Waka - Sales Force',
+                'label' => 'Utilisateur de Sales Force',
             ],
         ];
     }
