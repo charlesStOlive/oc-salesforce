@@ -298,13 +298,20 @@ class SalesForceImport
             case "compare":
                 $comparisons = $transform['comparisons'];
                 $resultFind = false;
+                //trace_log('valeur recherché : '.$value);
+                if(!$value) {
+                    return $transform['default'];
+                }
                 foreach($comparisons as $result=>$searchedArray) {
-                    if(in_array($value, $comparisons)) {
+                    //trace_log($searchedArray);
+                    if(in_array($value, $searchedArray)) {
                         $resultFind = true;
+                        //trace_log('trouvé : '.$result);
                         return $result;
                     }
                 }
                 if(!$resultFind) {
+                    //trace_log('pas trouvé');
                     return $transform['default'];
                 }
             case "other":
