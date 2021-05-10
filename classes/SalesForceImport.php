@@ -295,6 +295,18 @@ class SalesForceImport
                     return null;
                 }
                 break;
+            case "compare":
+                $comparisons = $transform['comparisons'];
+                $resultFind = false;
+                foreach($comparisons as $result=>$searchedArray) {
+                    if(in_array($value, $comparisons)) {
+                        $resultFind = true;
+                        return $result;
+                    }
+                }
+                if(!$resultFind) {
+                    return $transform['default'];
+                }
             case "other":
                 return $value;
         }
