@@ -3,7 +3,7 @@
 namespace Waka\SalesForce\Classes;
 
 use Config;
-use October\Rain\Support\Collection;
+use Winter\Storm\Support\Collection;
 use Yaml;
 
 class SalesForceConfig
