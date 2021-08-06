@@ -154,9 +154,9 @@ class ImportSf implements WakajobQueueJob
     }
 
     private function closeJob($sfImporter) {
-        trace_log('fin du job');
+        //trace_log('fin du job');
         $closingEvent = $sfImporter->getConfig('closingEvent');
-        trace_log('closingEvent : ' .$sfImporter->getConfig('closingEvent'));
+        //trace_log('closingEvent : ' .$sfImporter->getConfig('closingEvent'));
         if($closingEvent) {
             \Event::fire($closingEvent, [$sfImporter]);
         }
