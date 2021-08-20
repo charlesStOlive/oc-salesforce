@@ -86,18 +86,18 @@ class Plugin extends PluginBase
 
         $schedule->call(function () {
             $usersIds = Settings::get('sf_responsable');
-            trace_log($usersIds);
+            //trace_log($usersIds);
             foreach ($usersIds as $userId) {
                 $user = \Backend\Models\User::find($userId);
-                trace_log($user->login);
+                //trace_log($user->login);
                 if ($user) {
-                    trace_log('lancement email');
+                    //trace_log('lancement email');
                     \Waka\Mailer\Classes\MailCreator::find('waka.salesforce::siege.sf', true)->setModelId($userId)->renderMail();
                 } else {
                     /**/trace_log('impossible de trouver le user 96 waka.salesforce plugin');
                 }
             }
-            trace_log('FIUN');
+            //trace_log('FIUN');
         })->dailyAt(Carbon::parse(Settings::get('sf_cron_time'))->addMinutes(4)->format('H:i'));
 
         
