@@ -68,12 +68,13 @@ class Plugin extends PluginBase
                 foreach ($usersIds as $userId) {
                     $user = \Backend\Models\User::find($userId);
                     if ($user) {
-                        $datasEmail = [
-                            'emails' => $user->email,
-                            'subject' => "Erreur authentification SalesForce",
-                        ];
-                        $mail = new \Waka\Mailer\Classes\MailCreator('waka.salesforce::error_auth_sf', 'slug');
-                        $mail->renderMail($user->id, $datasEmail);
+                        // $datasEmail = [
+                        //     'emails' => $user->email,
+                        //     'subject' => "Erreur authentification SalesForce",
+                        // ];
+                        // $mail = new \Waka\Mailer\Classes\MailCreator('waka.salesforce::error_auth_sf', 'slug');
+                        // $mail->renderMail($user->id, $datasEmail);
+                        \Waka\Mailer\Classes\MailCreator::find('waka.salesforce::error_auth_sf', true)->setModelId($user->id)->renderMail();
                     }
                 }
             }
@@ -89,12 +90,13 @@ class Plugin extends PluginBase
                 foreach ($usersIds as $userId) {
                     $user = \Backend\Models\User::find($userId);
                     if ($user) {
-                        $datasEmail = [
-                            'emails' => $user->email,
-                            'subject' => "Bilan SalesForce",
-                        ];
-                        $mail = new \Waka\Mailer\Classes\MailCreator('waka.salesforce::siege.sf', 'slug');
-                        $mail->renderMail($user->id, $datasEmail);
+                        // $datasEmail = [
+                        //     'emails' => $user->email,
+                        //     'subject' => "Bilan SalesForce",
+                        // ];
+                        // $mail = new \Waka\Mailer\Classes\MailCreator('waka.salesforce::siege.sf', 'slug');
+                        // $mail->renderMail($user->id, $datasEmail);
+                        \Waka\Mailer\Classes\MailCreator::find('waka.salesforce::siege.sf', true)->setModelId($user->id)->renderMail();
                     }
                 }
             }
