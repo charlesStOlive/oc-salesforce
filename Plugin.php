@@ -52,14 +52,12 @@ class Plugin extends PluginBase
     {
         //trace_log(Carbon::parse(Settings::get('sf_cron_time'))->format('H:i'));
         //Lancement des cron
+
         $schedule->call(function () {
-            //trace_log("Je lance le cron SF");
             $usersIds = Settings::get('sf_responsable');
-            //trace_log($usersIds);
             $forrest = false;
             try {
                 \Forrest::authenticate();
-                ;
                 $forrest = true;
                 //trace_log("Je tente une connection");
             } catch (\Exception $e) {
@@ -68,40 +66,41 @@ class Plugin extends PluginBase
                 foreach ($usersIds as $userId) {
                     $user = \Backend\Models\User::find($userId);
                     if ($user) {
-                        // $datasEmail = [
-                        //     'emails' => $user->email,
-                        //     'subject' => "Erreur authentification SalesForce",
-                        // ];
-                        // $mail = new \Waka\Mailer\Classes\MailCreator('waka.salesforce::error_auth_sf', 'slug');
-                        // $mail->renderMail($user->id, $datasEmail);
                         \Waka\Mailer\Classes\MailCreator::find('waka.salesforce::error_auth_sf', true)->setModelId($user->id)->renderMail();
                     }
                 }
             }
             if ($forrest) {
-                //trace_log("OK je lance l'import");
-                //Lancement du CRON
                 $imports = Settings::get('sf_active_imports');
                 foreach ($imports as $import) {
-                    $sfImportData = SalesForceImport::find($import)->executeQuery(true);
-                }
-                //trace_log("Import terminé");
-                //A la fin j'envoie le mail de bilan aux collaborateurs
-                foreach ($usersIds as $userId) {
-                    $user = \Backend\Models\User::find($userId);
-                    if ($user) {
-                        // $datasEmail = [
-                        //     'emails' => $user->email,
-                        //     'subject' => "Bilan SalesForce",
-                        // ];
-                        // $mail = new \Waka\Mailer\Classes\MailCreator('waka.salesforce::siege.sf', 'slug');
-                        // $mail->renderMail($user->id, $datasEmail);
-                        \Waka\Mailer\Classes\MailCreator::find('waka.salesforce::siege.sf', true)->setModelId($user->id)->renderMail();
-                    }
+                    $datas = [
+                        'productorId' => $import,
+                        'options' => []
+                    ];
+                    $job = new \Waka\SalesForce\Jobs\ImportSf($datas);
+                    $jobManager = \App::make('Waka\Wakajob\Classes\JobManager');
+                    $jobManager->dispatch($job, "Chargement SalesForce ".$import);
                 }
             }
-            //})->everyMinute();
         })->dailyAt(Carbon::parse(Settings::get('sf_cron_time'))->format('H:i'));
+
+        $schedule->call(function () {
+            $usersIds = Settings::get('sf_responsable');
+            trace_log($usersIds);
+            foreach ($usersIds as $userId) {
+                $user = \Backend\Models\User::find($userId);
+                trace_log($user->login);
+                if ($user) {
+                    trace_log('lancement email');
+                    \Waka\Mailer\Classes\MailCreator::find('waka.salesforce::siege.sf', true)->setModelId($userId)->renderMail();
+                } else {
+                    /**/trace_log('impossible de trouver le user 96 waka.salesforce plugin');
+                }
+            }
+            trace_log('FIUN');
+        })->dailyAt(Carbon::parse(Settings::get('sf_cron_time'))->addMinutes(4)->format('H:i'));
+
+        
     }
 
     /**
