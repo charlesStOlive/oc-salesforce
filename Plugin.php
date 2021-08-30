@@ -53,7 +53,7 @@ class Plugin extends PluginBase
         //Lancement des cron
 
         $schedule->call(function () {
-            trace_log('lancement cron sf');
+            //trace_log('lancement cron sf');
             $usersIds = Settings::get('sf_responsable');
             $forrest = false;
             try {
@@ -84,12 +84,12 @@ class Plugin extends PluginBase
 
         $schedule->call(function () {
             $usersIds = Settings::get('sf_responsable');
-            trace_log($usersIds);
+            //trace_log($usersIds);
             foreach ($usersIds as $userId) {
                 $user = \Backend\Models\User::find($userId);
-                trace_log($user->login);
+                //trace_log($user->login);
                 if ($user) {
-                    trace_log('lancement email');
+                    //trace_log('lancement email');
                     \Waka\Mailer\Classes\MailCreator::find('waka.salesforce::siege.sf', true)->setModelId($userId)->renderMail();
                 } else {
                     /**/trace_log('impossible de trouver le user ligne 96 waka.salesforce plugin');

@@ -164,7 +164,7 @@ class SalesForceImport
         if(!$auth) {
             return 'error';
         }
-        trace_log('executeQuery');
+        //trace_log('executeQuery');
         $result = \Forrest::query($query);
         $totalSize = $result['totalSize'] ?? null;
         $next = $result['nextRecordsUrl'] ?? null;
@@ -202,12 +202,12 @@ class SalesForceImport
         }
 
         $newNext = $result['nextRecordsUrl'] ?? null;
-        trace_log("newNext : ".$newNext);
+        //trace_log("newNext : ".$newNext);
         if($newNext) {
             //trace_log("newNext");
             $this->sendAllNextQuery($newNext);
         } else {
-            trace_log('updateAndCloseLog');
+            //trace_log('updateAndCloseLog');
             $this->updateAndCloseLog($this->logsf);
         }
         
@@ -216,7 +216,7 @@ class SalesForceImport
 
     public function handleRequest($records) {
         if ($this->getConfig('query_model') && $this->getConfig('query_fnc')) {
-            trace_log('handleRequest 227 traitement manuel');
+            //trace_log('handleRequest 227 traitement manuel');
             $classImport = $this->getConfig('query_model');
             $classImport = new $classImport;
             $fnc = $this->getConfig('query_fnc');
@@ -230,7 +230,7 @@ class SalesForceImport
 
     private function mapResults($rows)
     {
-        trace_log('mapResults');
+        //trace_log('mapResults');
         foreach ($rows as $row) {
             $mappedRow = $this->mapResult($row);
             $model = $this->getConfig('model');
@@ -245,13 +245,13 @@ class SalesForceImport
                     $mappedRow
                 );
                 $this->mappedRows++;
-                trace_log('row ok');
+                //trace_log('row ok');
             } catch (\Exception $e) {
-                trace_log($e->getMessage());
+                //trace_log($e->getMessage());
                 $logsfError = new LogsfError(['error' => $id . " : " . $e->getMessage()]);
                 $this->logsf->logsfErrors()->add($logsfError);
             }
-            trace_log('fin du mapResults');
+            //trace_log('fin du mapResults');
         }
     }
 
@@ -336,7 +336,7 @@ class SalesForceImport
 
     private function authenticate() {
         try {
-            trace_log('je tente l authentification');
+            //trace_log('je tente l authentification');
             \Forrest::authenticate();
             return true;
         } catch (\Exception $e) {
