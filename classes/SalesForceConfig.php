@@ -28,20 +28,6 @@ class SalesForceConfig
         return $lists;
     }
 
-    // public function execOne(String $searchedKey)
-    // {
-    //     SalesForceImport::find($searchedKey)->executeQuery();
-    // }
-
-    // public function execImports()
-    // {
-    //     $imports = Settings::get('sf_active_imports');
-    //     foreach ($imports as $key => $import) {
-    //         SalesForceImport::find($key)->executeQuery();
-    //     }
-
-    // }
-
     public function getSrConfig()
     {
         $configYaml = Config::get('wcli.wconfig::salesForce.src');

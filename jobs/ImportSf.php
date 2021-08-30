@@ -99,12 +99,18 @@ class ImportSf implements WakajobQueueJob
         /**
          * travail preparatoire sur les donnes
          */
+        trace_log('handle');
+        trace_log($this->data);
         $sfCode = $this->data['productorId'];
         $mainDate = $this->data['options']['main_date'] ?? null;
         $sfImporter = SalesForceImport::find($sfCode)->changeMainDate($mainDate);
         $firstQuery = $sfImporter->executeQuery();
+        if($firstQuery == 'error') {
+            $this->jobManager->failJob($this->jobId, ['error' => "Erreur d'authentification"]);  
+            throw new \ApplicationException("Erreur d'authentification");
+        }
         $totalSize = $firstQuery['totalSize'];
-        //trace_log($totalSize);
+        trace_log("taille total : ".$totalSize);
         $this->chunk = ceil($totalSize / 2000);
         //trace_log($this->chunk);
 
@@ -119,16 +125,13 @@ class ImportSf implements WakajobQueueJob
         $skipped = 0;
         try {
             $sfImporter->handleRequest($firstQuery['records']);
-            //trace_log($this->loop);
             $this->jobManager->updateJobState($this->jobId, $this->loop);
-            $next = $firstQuery['next'];
+            $next = $firstQuery['next'] ?? null;
+            trace_log('next : '.$next);
             if($next) {
                 $this->launchNext($sfImporter, $next);
             } else {
                 $this->closejob($sfImporter);
-                
-                
-                
             }
        } catch (\Exception $ex) {
             /**/trace_log($ex->getMessage());
@@ -137,11 +140,15 @@ class ImportSf implements WakajobQueueJob
     }
 
     private function launchNext($sfImporter, $next) {
+        trace_log('launchNext');
         $newNext = null;
         if ($this->jobManager->checkIfCanceled($this->jobId)) {
             $this->jobManager->failJob($this->jobId);
         } else {
             $newNext = $sfImporter->sendNextQuery($next);
+            if($newNext == 'error') {
+                $this->jobManager->failJob($this->jobId, ['error' => "Erreur d'authentification"]);  
+            }
             $this->loop++;
             //trace_log($this->loop);
             $this->jobManager->updateJobState($this->jobId, $this->loop);
@@ -154,20 +161,22 @@ class ImportSf implements WakajobQueueJob
     }
 
     private function closeJob($sfImporter) {
-        //trace_log('fin du job');
+        trace_log('fin du job closeJob');
         $closingEvent = $sfImporter->getConfig('closingEvent');
-        //trace_log('closingEvent : ' .$sfImporter->getConfig('closingEvent'));
+        trace_log('closingEvent : ' .$sfImporter->getConfig('closingEvent'));
         if($closingEvent) {
             \Event::fire($closingEvent, [$sfImporter]);
         }
         
         $sfImporter->updateAndCloseLog();
+        trace_log('Apres update and close job');
         $this->jobManager->completeJob(
             $this->jobId,
             [
             'Message' => \Lang::get('waka.salesforce::lang.job.title'),
             ]
         );
+        trace_log('arpès this->jobManager->completeJob');
         
     }
 }

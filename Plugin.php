@@ -50,18 +50,16 @@ class Plugin extends PluginBase
 
     public function registerSchedule($schedule)
     {
-        //trace_log(Carbon::parse(Settings::get('sf_cron_time'))->format('H:i'));
         //Lancement des cron
 
         $schedule->call(function () {
+            trace_log('lancement cron sf');
             $usersIds = Settings::get('sf_responsable');
             $forrest = false;
             try {
                 \Forrest::authenticate();
                 $forrest = true;
-                //trace_log("Je tente une connection");
             } catch (\Exception $e) {
-                //trace_log("Erreur de connection SF");
                 //trace_log($e);
                 foreach ($usersIds as $userId) {
                     $user = \Backend\Models\User::find($userId);
@@ -86,19 +84,19 @@ class Plugin extends PluginBase
 
         $schedule->call(function () {
             $usersIds = Settings::get('sf_responsable');
-            //trace_log($usersIds);
+            trace_log($usersIds);
             foreach ($usersIds as $userId) {
                 $user = \Backend\Models\User::find($userId);
-                //trace_log($user->login);
+                trace_log($user->login);
                 if ($user) {
-                    //trace_log('lancement email');
+                    trace_log('lancement email');
                     \Waka\Mailer\Classes\MailCreator::find('waka.salesforce::siege.sf', true)->setModelId($userId)->renderMail();
                 } else {
-                    /**/trace_log('impossible de trouver le user 96 waka.salesforce plugin');
+                    /**/trace_log('impossible de trouver le user ligne 96 waka.salesforce plugin');
                 }
             }
             //trace_log('FIUN');
-        })->dailyAt(Carbon::parse(Settings::get('sf_cron_time'))->addMinutes(4)->format('H:i'));
+        })->dailyAt(Carbon::parse(Settings::get('sf_cron_time'))->addMinutes(10)->format('H:i'));
 
         
     }

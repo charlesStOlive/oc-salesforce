@@ -148,9 +148,8 @@ class SalesForceImport
         return $vars;
     }
 
-    public function executeQuery($all = false)
+    public function executeQuery()
     {
-        \Forrest::authenticate();
         $configOk = $this->checkAndConfigImport();
         if(!$configOk) {
             throw new \ApplicationException("Erreur Inconnu dans la config");
@@ -158,22 +157,14 @@ class SalesForceImport
         $query = $this->prepareQuery();
         $this->logsf = $this->createLog($query);
         $this->mappedRows = 0;
-        if($all) {
-            $firstQuery =  $this->sendFirstQuery($query);
-            $next = $firstQuery['next'] ?? null;
-            $records = $firstQuery['records'];
-            $this->handleRequest($records);
-            if($next) {
-                $this->sendAllNextQuery($next);
-            }
-            return [
-               'totalSize' => $firstQuery['totalSize'],
-            ];
-        } else {
-            return $this->sendFirstQuery($query); 
-        }
+        return $this->sendFirstQuery($query); 
     }
     public function sendFirstQuery($query = null) {
+        $auth = $this->authenticate();
+        if(!$auth) {
+            return 'error';
+        }
+        trace_log('executeQuery');
         $result = \Forrest::query($query);
         $totalSize = $result['totalSize'] ?? null;
         $next = $result['nextRecordsUrl'] ?? null;
@@ -186,7 +177,10 @@ class SalesForceImport
         ];
     }
     public function sendNextQuery($next) {
-        \Forrest::authenticate();
+        $auth = $this->authenticate();
+        if(!$auth) {
+            return 'error';
+        }
         $result = \Forrest::next($next);
         $records = $result['records'] ?? null;
         if($records) {
@@ -197,17 +191,23 @@ class SalesForceImport
     }
 
     public function sendAllNextQuery($next) {
-        \Forrest::authenticate();
+        $auth = $this->authenticate();
+        if(!$auth) {
+            return 'error';
+        }
         $result = \Forrest::next($next);
         $records = $result['records'] ?? null;
         if($records) {
             $this->handleRequest($records);
         }
+
         $newNext = $result['nextRecordsUrl'] ?? null;
+        trace_log("newNext : ".$newNext);
         if($newNext) {
             //trace_log("newNext");
             $this->sendAllNextQuery($newNext);
         } else {
+            trace_log('updateAndCloseLog');
             $this->updateAndCloseLog($this->logsf);
         }
         
@@ -215,48 +215,43 @@ class SalesForceImport
     
 
     public function handleRequest($records) {
-        if ($this->getConfig('query_model')) {
+        if ($this->getConfig('query_model') && $this->getConfig('query_fnc')) {
+            trace_log('handleRequest 227 traitement manuel');
             $classImport = $this->getConfig('query_model');
             $classImport = new $classImport;
             $fnc = $this->getConfig('query_fnc');
             $this->mappedRows += $classImport->{$fnc}($records);
-        } else {
+        } elseif($this->getConfig('mapping')) {
             $this->mapResults($records);
+        } else {
+            throw new \ApplicationException("mapping pas configuré dans congif salesforce");
         }
     }
 
     private function mapResults($rows)
     {
+        trace_log('mapResults');
         foreach ($rows as $row) {
             $mappedRow = $this->mapResult($row);
             $model = $this->getConfig('model');
-            if (method_exists($model, 'withTrashed')) {
-                $model = $model::withTrashed();
-                $mappedRow['deleted_at'] = null;
-                $id = array_shift($mappedRow);
-                try {
-                    $model->updateOrCreate(
-                        ['id' => $id],
-                        $mappedRow
-                    );
-                    $this->mappedRows++;
-                } catch (\Exception $e) {
-                    $logsfError = new LogsfError(['error' => $id . " : " . $e->getMessage()]);
-                    $this->logsf->logsfErrors()->add($logsfError);
-                }
-            } else {
-                $id = array_shift($mappedRow);
-                try {
-                    $model::updateOrCreate(
-                        ['id' => $id],
-                        $mappedRow
-                    );
-                    $this->mappedRows++;
-                } catch (\Exception $e) {
-                    $logsfError = new LogsfError(['error' => $id . " : " . $e->getMessage()]);
-                    $this->logsf->logsfErrors()->add($logsfError);
-                }
+            // if (method_exists($model, 'withTrashed')) {
+            //     $model = $model::withTrashed();
+            //     $mappedRow['deleted_at'] = null;
+            // }
+            $id = array_shift($mappedRow);
+            try {
+                $model::updateOrCreate(
+                    ['id' => $id],
+                    $mappedRow
+                );
+                $this->mappedRows++;
+                trace_log('row ok');
+            } catch (\Exception $e) {
+                trace_log($e->getMessage());
+                $logsfError = new LogsfError(['error' => $id . " : " . $e->getMessage()]);
+                $this->logsf->logsfErrors()->add($logsfError);
             }
+            trace_log('fin du mapResults');
         }
     }
 
@@ -339,6 +334,17 @@ class SalesForceImport
         }
     }
 
+    private function authenticate() {
+        try {
+            trace_log('je tente l authentification');
+            \Forrest::authenticate();
+            return true;
+        } catch (\Exception $e) {
+            $this->updateAndCloseErrorLog();
+            return false;
+        }
+    }
+
     /**
      * Creattion des logs
      */
@@ -371,6 +377,15 @@ class SalesForceImport
         ]);
     }
     public function updateAndCloseLog()
+    {
+        $this->logsf->update([
+            'is_ended' => false,
+            'ended_at' => Carbon::now(),
+            'nb_updated_rows' => $this->mappedRows,
+        ]);
+        return $this->logsf;
+    }
+    public function updateAndCloseErrorLog()
     {
         // if (!$this->doLog) {
         //     return null;
