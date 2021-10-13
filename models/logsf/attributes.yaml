@@ -1,0 +1,18 @@
+# ===================================
+#  List Column Definitions
+# ===================================
+
+icon: wicon-salesforce
+attributes:
+    name:
+        label: waka.salesforce::lang.logsf.name
+        searchable: true
+    query:
+        label: waka.salesforce::lang.logsf.query
+    nb_updated_rows:
+        label: waka.salesforce::lang.logsf.nb_updated_rows
+    sf_total_size:
+        label: waka.salesforce::lang.logsf.sf_total_size
+    updated_at:
+        label: waka.utils::lang.global.updated_at
+        type: timetense
