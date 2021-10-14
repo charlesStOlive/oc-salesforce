@@ -5,3 +5,4 @@
 columns:
     error:
         label: 'Error'
+        searchable: true
