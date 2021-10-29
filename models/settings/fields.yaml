@@ -1,4 +1,13 @@
 fields:
+  imports_authorized:
+    label: waka.salesforce::lang.settings.imports_authorized
+    type: switch
+    default: true
+  exports_authorized:
+    label: waka.salesforce::lang.settings.imports_authorized
+    type: switch
+    default: true
+  
   active_imports:
     label: waka.salesforce::lang.settings.active_imports
     type: checkboxlist

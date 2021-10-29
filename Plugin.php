@@ -69,6 +69,11 @@ class Plugin extends PluginBase
                 }
             }
             if ($forrest) {
+                $importsAuthorized = \Waka\SalesForce\Models\Settings::get('imports_authorized');
+                if(!$importsAuthorized) {
+                    \Log::info('Les imports sont bloqués dans les Settings de Salesforce');
+                    return;
+                }
                 $imports = Settings::get('sf_active_imports');
                 foreach ($imports as $import) {
                     $datas = [
