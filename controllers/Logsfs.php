@@ -4,7 +4,7 @@ use BackendMenu;
 use Backend\Classes\Controller;
 use System\Classes\SettingsManager;
 use Waka\SalesForce\Classes\SalesForceImport;
-use Wcli\Wconfig\Models\Settings;
+use Waka\SalesForce\Models\Settings;
 
 /**
  * Logsf Back-end Controller

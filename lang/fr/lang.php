@@ -15,6 +15,8 @@ return [
     'settings' => [
         'oldest_date' => "Date de réinitialisation",
         'active_imports' => "Choisissez les imports actifs",
+        'imports_authorized' => "Imports autorisés",
+        'exports_authorized' => "Exports autorisés"
     ],
     'global' => [
         'unauthorized' => "SalesForce n'est pas connecté ! ",

@@ -1,21 +1,32 @@
 fields:
-  imports_authorized:
-    label: waka.salesforce::lang.settings.imports_authorized
-    type: switch
-    default: true
-  exports_authorized:
-    label: waka.salesforce::lang.settings.imports_authorized
-    type: switch
-    default: true
-  
-  active_imports:
-    label: waka.salesforce::lang.settings.active_imports
-    type: checkboxlist
-    quickselect: true 
-    options: listImports
+    imports_authorized:
+        label: waka.salesforce::lang.settings.imports_authorized
+        type: switch
+        default: true
+    exports_authorized:
+        label: waka.salesforce::lang.settings.exports_authorized
+        type: switch
+        default: true
+    
+    sf_active_imports:
+        label: waka.salesforce::lang.settings.active_imports
+        type: checkboxlist
+        quickselect: true 
+        options: listImports
 
-  oldest_date:
-    label: waka.salesforce::lang.settings.oldest_date
-    type: datepicker
+    sf_oldest_date:
+        label: waka.salesforce::lang.settings.oldest_date
+        type: datepicker
 
-  
+    sf_cron_time:
+        label: Heure d'execution du CRON principal
+        type: datepicker
+        mode: time
+        span: left
+
+    sf_responsable:
+        label: Collaborateurs recevant l'email de bilan Sales Force
+        type: taglist
+        mode: array
+        useKey: true
+        options: listUsers

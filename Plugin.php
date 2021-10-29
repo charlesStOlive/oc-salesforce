@@ -10,7 +10,7 @@ use Lang;
 use System\Classes\PluginBase;
 use Waka\SalesForce\Classes\SalesForceConfig;
 use Waka\SalesForce\Classes\SalesForceImport;
-use Wcli\Wconfig\Models\Settings;
+use Waka\SalesForce\Models\Settings;
 
 /**
  * SalesForce Plugin Information File
@@ -50,10 +50,17 @@ class Plugin extends PluginBase
 
     public function registerSchedule($schedule)
     {
-        //Lancement des cron
+        $sfCronTime = Settings::get('sf_cron_time');
+        trace_log($sfCronTime);
 
         $schedule->call(function () {
-            //trace_log('lancement cron sf');
+            trace_log('lancement cron sf');
+            $sfCronTime = Settings::get('sf_cron_time');
+            trace_log($sfCronTime);
+            if(!$sfCronTime) {
+                \Log::error('sfCronTime est vide le cron SalesForce est annulé');
+                return;
+            }
             $usersIds = Settings::get('sf_responsable');
             $forrest = false;
             try {
@@ -69,7 +76,7 @@ class Plugin extends PluginBase
                 }
             }
             if ($forrest) {
-                $importsAuthorized = \Waka\SalesForce\Models\Settings::get('imports_authorized');
+                $importsAuthorized = Settings::get('imports_authorized');
                 if(!$importsAuthorized) {
                     \Log::info('Les imports sont bloqués dans les Settings de Salesforce');
                     return;
@@ -88,6 +95,11 @@ class Plugin extends PluginBase
         })->dailyAt(Carbon::parse(Settings::get('sf_cron_time'))->format('H:i'));
 
         $schedule->call(function () {
+            $sfCronTime = Settings::get('sf_cron_time');
+            if(!$sfCronTime) {
+                \Log::error('sfCronTime est vide le cron SalesForce est annulé');
+                return;
+            }
             $usersIds = Settings::get('sf_responsable');
             //trace_log($usersIds);
             foreach ($usersIds as $userId) {
@@ -115,62 +127,65 @@ class Plugin extends PluginBase
     {
         $this->bootPackages();
 
+        $sfCronTime = Settings::get('sf_cron_time');
+        trace_log(Carbon::parse(Settings::get('sf_cron_time'))->format('H:i'));
+
         //trace_log(Config::get('forrest.authentication'));
 
-        Event::listen('backend.form.extendFields', function ($widget) {
+        // Event::listen('backend.form.extendFields', function ($widget) {
 
-            //trace_log('yo');
-            if (!$widget->getController() instanceof \System\Controllers\Settings) {
-                return;
-            }
+        //     //trace_log('yo');
+        //     if (!$widget->getController() instanceof \System\Controllers\Settings) {
+        //         return;
+        //     }
 
-            // Only for the User model
-            if (!$widget->model instanceof Settings) {
-                return;
-            }
+        //     // Only for the User model
+        //     if (!$widget->model instanceof Settings) {
+        //         return;
+        //     }
 
-            if ($widget->isNested === true) {
-                return;
-            }
+        //     if ($widget->isNested === true) {
+        //         return;
+        //     }
 
-            $widget->addTabFields([
-                'sf_responsable' => [
-                    'tab' => 'Sales Force',
-                    'label' => "Collaborateurs recevant l'email de bilan Sales Force",
-                    'type' => 'taglist',
-                    'mode' => 'array',
-                    'useKey' => 'true',
-                    'options' => 'listUsers',
-                ],
-                'sf_active_imports' => [
-                    'tab' => 'Sales Force',
-                    'label' => 'waka.salesforce::lang.settings.active_imports',
-                    'type' => 'checkboxlist',
-                    'quickselect' => true,
-                    'options' => 'listImports',
-                ],
+        //     $widget->addTabFields([
+        //         'sf_responsable' => [
+        //             'tab' => 'Sales Force',
+        //             'label' => "Collaborateurs recevant l'email de bilan Sales Force",
+        //             'type' => 'taglist',
+        //             'mode' => 'array',
+        //             'useKey' => 'true',
+        //             'options' => 'listUsers',
+        //         ],
+        //         'sf_active_imports' => [
+        //             'tab' => 'Sales Force',
+        //             'label' => 'waka.salesforce::lang.settings.active_imports',
+        //             'type' => 'checkboxlist',
+        //             'quickselect' => true,
+        //             'options' => 'listImports',
+        //         ],
 
-                'sf_oldest_date' => [
-                    'tab' => 'Sales Force',
-                    'label' => 'waka.salesforce::lang.settings.oldest_date',
-                    'type' => 'datepicker',
-                ],
-                'sf_cron_time' => [
-                    'tab' => 'Sales Force',
-                    'label' => "Heure d'execution du CRON",
-                    'type' => 'datepicker',
-                    'mode' => 'time',
-                    'span' => 'left',
-                    'width' => '100px',
-                ],
-            ]);
-        });
-        Settings::extend(function ($setting) {
-            $setting->addDynamicMethod('listImports', function () {
-                $sf = new \Waka\SalesForce\Classes\SalesForceConfig();
-                return $sf->lists('import');
-            });
-        });
+        //         'sf_oldest_date' => [
+        //             'tab' => 'Sales Force',
+        //             'label' => 'waka.salesforce::lang.settings.oldest_date',
+        //             'type' => 'datepicker',
+        //         ],
+        //         'sf_cron_time' => [
+        //             'tab' => 'Sales Force',
+        //             'label' => "Heure d'execution du CRON",
+        //             'type' => 'datepicker',
+        //             'mode' => 'time',
+        //             'span' => 'left',
+        //             'width' => '100px',
+        //         ],
+        //     ]);
+        // });
+        // Settings::extend(function ($setting) {
+        //     $setting->addDynamicMethod('listImports', function () {
+        //         $sf = new \Waka\SalesForce\Classes\SalesForceConfig();
+        //         return $sf->lists('import');
+        //     });
+        // });
     }
 
     public function bootPackages()
@@ -255,15 +270,15 @@ class Plugin extends PluginBase
     {
 
         return [
-            // 'sales_force' => [
-            //     'label' => Lang::get('waka.salesforce::lang.menu.settings'),
-            //     'description' => Lang::get('waka.salesforce::lang.menu.settings_description'),
-            //     'category' => Lang::get('waka.salesforce::lang.menu.category'),
-            //     'icon' => 'icon-cog',
-            //     'class' => 'Waka\SalesForce\Models\Settings',
-            //     'order' => 101,
-            //     'permissions' => ['waka.salesforce.admin', 'waka.salesforce.admin'],
-            // ],
+            'sales_force' => [
+                'label' => Lang::get('waka.salesforce::lang.menu.settings'),
+                'description' => Lang::get('waka.salesforce::lang.menu.settings_description'),
+                'category' => Lang::get('waka.salesforce::lang.menu.category'),
+                'icon' => 'icon-cog',
+                'class' => 'Waka\SalesForce\Models\Settings',
+                'order' => 101,
+                'permissions' => ['waka.salesforce.admin', 'waka.salesforce.admin'],
+            ],
             'logsfs' => [
                 'label' => Lang::get('waka.salesforce::lang.menu.logsf'),
                 'description' => Lang::get('waka.salesforce::lang.menu.logsf_description'),

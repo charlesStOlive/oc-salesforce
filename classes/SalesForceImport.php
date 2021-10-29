@@ -5,7 +5,7 @@ namespace Waka\SalesForce\Classes;
 use Carbon\Carbon;
 use Waka\SalesForce\Models\Logsf;
 use Waka\SalesForce\Models\LogsfError;
-use Wcli\Wconfig\Models\Settings;
+use Waka\SalesForce\Models\Settings;
 
 class SalesForceImport
 {
