@@ -57,7 +57,11 @@ class Logsfs extends Controller
         } catch (\Exception $e) {
             return false;
         }
-        $identity = \Forrest::identity();
+        try {
+            $identity = \Forrest::identity();
+        } catch (\Exception $e) {
+            return false;
+        }
         if ($identity) {
             return true;
         } else {
