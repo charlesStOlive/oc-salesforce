@@ -24,7 +24,7 @@ Entrez 'App' dans la recherche de la config, selectionez **App Manager**, puis *
 * Enable OAuth Settings : yes
 * CallbackUrl: {ledomainedelapp}/api/sf/wu/callback
 * Use digital signature : yes
-* Uploader le cetificat
+* Uploader le cetificat : publickey.cer
 * Dnas les selectz 0Auth:
   * Au  minimum : Perform requests at any time ( refresj_token, offline_access)
 
@@ -42,6 +42,7 @@ SF_CALLBACK_URI = {le code au format {ledomainedelapp}/api/sf/wu/callback}
 ```
 #### Authoriser l'utilisateur
 1. Cliquez sur Manage Connected Apps 
+   
 ![](../assets/docs_images/2022-01-21-17-58-20.png)
 
 2. Cliquez sur Manage permissions sets et ajoutez le profil concerné par l'app 
@@ -56,3 +57,15 @@ SF_CALLBACK_URI = {le code au format {ledomainedelapp}/api/sf/wu/callback}
 ![](../assets/docs_images/2022-01-21-18-07-23.png)
 
 #### Verifier si la config est OK
+Rendez vous sur la page gestion des logs de votre application. 
+
+![](../assets/docs_images/2022-01-22-09-59-00.png)
+
+Cliquer sur connecter. 
+
+
+![](../assets/docs_images/2022-01-22-10-20-20.png)
+
+Une confirmation de connextion devrait apparaitre.
+
+> Il n'éxiste pas de gestion des erreurs, je vous invite à verifier les logs si la connexion ne marche pas.
