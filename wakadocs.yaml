@@ -1,0 +1,7 @@
+files:
+    salesforce_install:
+        title: Installation SalesForce
+        group: "01 Installation"
+        comment: "Comment configurer SalesForce"
+        relativePath: waka/salesforce/docs
+        order: 20
