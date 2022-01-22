@@ -30,11 +30,15 @@ class SalesForceConfig
 
     public function getSrConfig()
     {
-        $configYaml = Config::get('wcli.wconfig::salesForce.src');
-        if ($configYaml) {
-            return Yaml::parseFile(plugins_path() . $configYaml);
-        } else {
-            return Yaml::parseFile(plugins_path() . '/wcli/wconfig/config/salesforce.yaml');
+        try {
+            $configYaml = Config::get('wcli.wconfig::salesForce.src');
+            if ($configYaml) {
+                return Yaml::parseFile(plugins_path() . $configYaml);
+            } else {
+                return Yaml::parseFile(plugins_path() . '/wcli/wconfig/config/salesforce.yaml');
+            }
+        } catch( \Exception $e) {
+            throw new \SystemException('Il manque le fichier de config salesforce dans le repertoire config de wconfig');
         }
     }
 }
