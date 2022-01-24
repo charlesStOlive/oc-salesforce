@@ -19,7 +19,7 @@ class SalesForceImport
         $salesForceConfgs = self::getSrConfig();
         $config = $salesForceConfgs[$key] ?? null;
         if (!$config) {
-            throw new \ApplicationException("La clef " . $key . " n'existe pas sans wconfig->salesforce.yaml ");
+            throw new \ApplicationException("La clef " . $key . " n'existe pas dans wconfig->salesforce.yaml ");
         } else {
             self::$config = $salesForceConfgs[$key];
             //trace_log(self::$config);
