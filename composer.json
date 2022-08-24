@@ -9,7 +9,7 @@
         }
     ],
     "require": {
-        "omniphx/forrest": "dev-master"
+        "omniphx/forrest": "dev-master_9"
     },
     "scripts": {
         "post-create-project-cmd": [
