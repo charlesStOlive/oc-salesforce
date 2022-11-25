@@ -3,5 +3,6 @@ files:
         title: Installation SalesForce
         group: "10 Installation"
         comment: "Comment configurer SalesForce"
+        permission: waka.salesforce.admin.super
         relativePath: waka/salesforce/docs
         order: 20
