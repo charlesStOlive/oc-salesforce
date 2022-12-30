@@ -7,7 +7,8 @@ Commencez par entrez les informations suivantes.
 ```
 SF_AUTH_METHOD = OAuthJWT
 SF_LOGIN_URL = https://login.salesforce.com/
-SF_USERNAME = { le nom de l'utilisateur principal} #Pas certain que ce soit utile. 
+# For sandbox: SF_LOGIN_URL=https://test.salesforce.com
+SF_USERNAME = { USERNAME de l'utilisateur principal} 
 ```
 ### Créez une clef et un certificat à la racine du serveur en entrant la commande suivante :
 ```
