@@ -220,7 +220,7 @@ class SalesForceImport
             $classImport = $this->getConfig('query_model');
             $classImport = new $classImport;
             $fnc = $this->getConfig('query_fnc');
-            $this->mappedRows += $classImport->{$fnc}($records);
+            $this->mappedRows += $classImport->{$fnc}($records, $this->logsf );
         } elseif($this->getConfig('mapping')) {
             $this->mapResults($records);
         } else {
