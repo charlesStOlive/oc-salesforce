@@ -1,4 +1,6 @@
-<?php namespace Waka\SalesForce;
+<?php
+
+namespace Waka\SalesForce;
 
 use App;
 use Backend;
@@ -57,7 +59,7 @@ class Plugin extends PluginBase
             //trace_log('lancement cron sf');
             $sfCronTime = Settings::get('sf_cron_time');
             //trace_log($sfCronTime);
-            if(!$sfCronTime) {
+            if (!$sfCronTime) {
                 \Log::error('sfCronTime est vide le cron SalesForce est annulé');
                 return;
             }
@@ -71,13 +73,13 @@ class Plugin extends PluginBase
                 foreach ($usersIds as $userId) {
                     $user = \Backend\Models\User::find($userId);
                     if ($user) {
-                        \Waka\Mailer\Classes\MailCreator::find('waka.salesforce::error_auth_sf', true)->setModelId($user->id)->renderMail();
+                        \Mail::sendTo($user, 'waka.salesforce::mail.error_auth_sf');
                     }
                 }
             }
             if ($forrest) {
                 $importsAuthorized = Settings::get('imports_authorized');
-                if(!$importsAuthorized) {
+                if (!$importsAuthorized) {
                     \Log::info('Les imports sont bloqués dans les Settings de Salesforce');
                     return;
                 }
@@ -89,33 +91,30 @@ class Plugin extends PluginBase
                     ];
                     $job = new \Waka\SalesForce\Jobs\ImportSf($datas);
                     $jobManager = \App::make('Waka\Wakajob\Classes\JobManager');
-                    $jobManager->dispatch($job, "Chargement SalesForce ".$import);
+                    $jobManager->dispatch($job, "Chargement SalesForce " . $import);
                 }
             }
         })->dailyAt(Carbon::parse(Settings::get('sf_cron_time'))->format('H:i'));
 
         $schedule->call(function () {
             $sfCronTime = Settings::get('sf_cron_time');
-            if(!$sfCronTime) {
+            if (!$sfCronTime) {
                 \Log::error('sfCronTime est vide le cron SalesForce est annulé');
                 return;
             }
             $usersIds = Settings::get('sf_responsable');
-            //trace_log($usersIds);
             foreach ($usersIds as $userId) {
                 $user = \Backend\Models\User::find($userId);
-                //trace_log($user->login);
                 if ($user) {
-                    //trace_log('lancement email');
-                    \Waka\Mailer\Classes\MailCreator::find('waka.salesforce::siege.sf', true)->setModelId($userId)->renderMail();
+                    $sfLogs = \Waka\SalesForce\Models\Logsf::with('logsfErrors')->where('updated_at', '>=', $fromDate = \Carbon\Carbon::today())->get();
+                    $vars = compact('sfLogs', 'user');
+                    \Mail::sendTo($user, 'waka.salesforce::mail.import_result', $vars);
                 } else {
-                    /**/trace_log('impossible de trouver le user ligne 96 waka.salesforce plugin');
+                    /**/
+                    //trace_log('impossible de trouver le user ligne 96 waka.salesforce plugin');
                 }
             }
-            //trace_log('FIUN');
         })->dailyAt(Carbon::parse(Settings::get('sf_cron_time'))->addMinutes(10)->format('H:i'));
-
-        
     }
 
     /**

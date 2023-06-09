@@ -1,0 +1,16 @@
+subject = Bilan des chargements SalesForce
+==
+<p>Bonjour {{ user.first_name }} {{ user.last_name }},</p>
+<p>Voici le resumé des derniers imports: <a href="{{url('backend/waka/salesforce/logsfs')}}">Accès au logs</a></p>
+{% for row in sfLogs %}
+<h2>{{ row.name }}</h2>
+<ul>
+<li>Date d'import : {{row.updated_at | localeDate('date-time', 'Europe/Paris')}}</li>
+<li>Nombre de ligne : {{row.nb_updated_rows}}</li>
+{% set somme = row.sf_total_size - row.nb_updated_rows %}
+{% if somme %}
+<li><span style="color:red">Nombre d'erreurs : <strong>{{somme}}</strong></span></li>
+{% endif %}
+</ul>
+{%endfor%}
+                    
