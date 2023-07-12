@@ -14,5 +14,5 @@ attributes:
     sf_total_size:
         label: waka.salesforce::lang.logsf.sf_total_size
     updated_at:
-        label: waka.utils::lang.global.updated_at
+        label: waka.wutils::lang.global.updated_at
         type: timetense

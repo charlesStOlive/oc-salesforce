@@ -23,7 +23,7 @@ class Plugin extends PluginBase
      * @var array Plugin dependencies
      */
     public $require = [
-        'Waka.Utils',
+        'Waka.Wutils',
         'Wcli.Wconfig',
     ];
     /**
